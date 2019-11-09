@@ -65,7 +65,7 @@ public class Player {
         }
         if (matches.size() != 0)
             return matches.last().time;
-        return DateTime.now().minusYears(2);
+        return DateTime.now().minusYears(4);
     }
 
     void write() {

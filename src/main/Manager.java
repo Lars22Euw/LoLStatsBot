@@ -52,39 +52,58 @@ public class Manager {
         System.out.println(user.matches.last().time.toString());
     }
 
+    static SortedSet<List<Game>> gamesPerDay(SortedSet<Game> matches) {
+        SortedSet<List<Game>> gamesPerDay = new TreeSet<>();
+        var day = new ArrayList<Game>();
+
+        if (matches == null || matches.size() == 0)
+            return gamesPerDay;
+
+        var start = matches.first().time;
+        DateTime nextDay = start.plusDays(1).withHourOfDay(6);
+
+        for (Game m: matches) {
+            while (!m.time.isBefore(nextDay)) {
+                nextDay = nextDay.plusDays(1);
+                gamesPerDay.add(day);
+                day = new ArrayList<>();
+            }
+            day.add(m);
+        }
+
+        return gamesPerDay;
+    }
+
     /**
      * Adds all games that are played within one day into a list.
      * Then add all day-lists into a total list.
      */
-    static List<List<Game>[]> gamesPerDayByWeek(SortedSet<Game> matches) {
-        List<Game>[] week = new ArrayList[7];
+    static List<List<Game>[]> gamesByWeek(SortedSet<List<Game>> matches) {
+        List<Game>[] week = new List[7];
         List<List<Game>[]> listOfWeeks = new ArrayList<>();
 
         if (matches == null || matches.size() == 0)
             return listOfWeeks;
 
-        var day = new ArrayList<Game>();
-        var start = matches.first().time;
+        var start = matches.first().get(0).time;
         int dayIndex = (start.dayOfWeek().get() -1 ) % 7;
-        //System.out.println("matches started at "+dayIndex);
-        DateTime NextDay = start.plusDays(1).withHourOfDay(6);
-        for (Game m : matches) {
-            while (!m.time.isBefore(NextDay)) {
-                // new day
-                NextDay = NextDay.plusDays(1);
-                week[dayIndex] = day;
-                day = new ArrayList<>();
+
+        for (var day : matches) {
+            if (day == null || day.size() == 0) {
+                // TODO: doStuff
+                week[dayIndex] = null;
                 dayIndex++;
-                if (dayIndex > 6) {
-                    // start new week;
-                    listOfWeeks.add(week);
-                    week = new ArrayList[7];
-                    dayIndex = 0;
-                }
+                continue;
             }
-            day.add(m);
+            if (dayIndex > 6) {
+                // start new week;
+                listOfWeeks.add(week);
+                week = new ArrayList[7];
+                dayIndex = 0;
+            }
+            week[dayIndex] = day;
+            dayIndex++;
         }
-        week[dayIndex] = day;
         listOfWeeks.add(week);
         return listOfWeeks;
     }
@@ -92,7 +111,7 @@ public class Manager {
     static void displayGames(SortedSet<Game> matches) {
         System.out.println("\nStarting History");
         System.out.println("Mo, Di, Mi, Do, Fr, Sa, So");
-        for (var lst: gamesPerDayByWeek(matches)) {
+        for (var lst: gamesByWeek(gamesPerDay(matches))) {
             if (lst == null || lst.length == 0) {
                 System.out.println("empty week");
                 continue;
