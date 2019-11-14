@@ -5,6 +5,7 @@ import com.merakianalytics.orianna.types.common.Region;
 import org.joda.time.DateTime;
 
 import java.io.*;
+import java.net.StandardSocketOptions;
 import java.util.*;
 
 public class Manager {
@@ -37,7 +38,7 @@ public class Manager {
         Orianna.setRiotAPIKey(args[0]);
         Orianna.setDefaultRegion(Region.EUROPE_WEST);
 
-        var m = new Manager("names-test.txt");
+        var m = new Manager("names.txt");
 
         int totalSummoners = m.summonersActive.size() + m.summonersInactive.size();
         System.out.println("Found "+totalSummoners+" summoners, "+m.summonersInactive.size()+" inactive.");
@@ -45,52 +46,89 @@ public class Manager {
 
         var playedWith = m.matrix();
         //m.printMatrix(playedWith);
-        //m.writeGEXF(playedWith);
+        m.writeGEXF(playedWith);
         var user = m.users.get(0);
-        System.out.println("User: "+user.name);
-        displayGames(user.matches);
-        System.out.println(user.matches.last().time.toString());
+        //System.out.println("User: "+user.name);
+        //displayGames(gamesByWeek(gamesPerDay(user.matches)));
+        //System.out.println(user.matches.last().time.toString());
+        int[] avgGamesDay = new int[7];
+        for (User u: m.users) {
+            var t = avgGamesPerDay(u);
+            if (t == null) continue;
+            for (int i= 0; i < 7; i++) {
+                avgGamesDay[i] += t[i];
+            }
+        }
+        printAvg(avgGamesDay);
     }
 
-    static SortedSet<List<Game>> gamesPerDay(SortedSet<Game> matches) {
-        SortedSet<List<Game>> gamesPerDay = new TreeSet<>();
-        var day = new ArrayList<Game>();
+    static int[] avgGamesPerDay(User u) {
+        List<Day[]> weeks = gamesByWeek(gamesPerDay(u.matches));
+        int[] avgGpDay = new int[7];
+        for (var a: avgGpDay) {
+            a = 0;
+        }
+        for (var week: weeks) {
+            for (int i = 0; i < 7; i++) {
+                if (week == null || week[i] == null || week[i].matches == null) continue;
+                avgGpDay[i] += week[i].matches.size();
+            }
+        }
+        return avgGpDay;
+    }
 
-        if (matches == null || matches.size() == 0)
-            return gamesPerDay;
+    static void printAvg(int[] avgDays) {
+        if (avgDays == null) return;
+        for (var a: avgDays) {
+            //if (a == null) continue;
+            System.out.print(a+"\t");
+
+
+        }
+    }
+
+    static SortedSet<Day> gamesPerDay(SortedSet<Game> matches) {
+        SortedSet days = new TreeSet<Day>();
+
+        if (matches == null || matches.size() == 0) {
+            return days;
+        }
 
         var start = matches.first().time;
         DateTime nextDay = start.plusDays(1).withHourOfDay(6);
+        Day day = new Day(nextDay);
 
         for (Game m: matches) {
             while (!m.time.isBefore(nextDay)) {
                 nextDay = nextDay.plusDays(1);
-                gamesPerDay.add(day);
-                day = new ArrayList<>();
+                days.add(day);
+                day = new Day(nextDay);
             }
-            day.add(m);
+            day.matches.add(m);
         }
 
-        return gamesPerDay;
+        return days;
     }
 
     /**
      * Adds all games that are played within one day into a list.
      * Then add all day-lists into a total list.
      */
-    static List<List<Game>[]> gamesByWeek(SortedSet<List<Game>> matches) {
-        List<Game>[] week = new List[7];
-        List<List<Game>[]> listOfWeeks = new ArrayList<>();
+    static List<Day[]> gamesByWeek(SortedSet<Day> days) {
+        Day[] week = new Day[7];
+        List<Day[]> listOfWeeks = new ArrayList<>();
 
-        if (matches == null || matches.size() == 0)
+        if (days == null || days.size() == 0)
             return listOfWeeks;
 
-        var start = matches.first().get(0).time;
-        int dayIndex = (start.dayOfWeek().get() -1 ) % 7;
+        var start = days.first().matches.get(0).time;
+        int dayIndex = ((start.dayOfWeek().get() -1 ) % 7 + 7) % 7;
 
-        for (var day : matches) {
-            if (day == null || day.size() == 0) {
+
+        for (var day : days) {
+            if (day == null || day.matches.size() == 0) {
                 // TODO: doStuff
+                if (dayIndex < 0 || dayIndex > 6) dayIndex = 0;
                 week[dayIndex] = null;
                 dayIndex++;
                 continue;
@@ -98,7 +136,7 @@ public class Manager {
             if (dayIndex > 6) {
                 // start new week;
                 listOfWeeks.add(week);
-                week = new ArrayList[7];
+                week = new Day[7];
                 dayIndex = 0;
             }
             week[dayIndex] = day;
@@ -108,20 +146,20 @@ public class Manager {
         return listOfWeeks;
     }
 
-    static void displayGames(SortedSet<Game> matches) {
+    static void displayGames(List<Day[]> listOfWeeks) {
         System.out.println("\nStarting History");
         System.out.println("Mo, Di, Mi, Do, Fr, Sa, So");
-        for (var lst: gamesByWeek(gamesPerDay(matches))) {
-            if (lst == null || lst.length == 0) {
+        for (var week: listOfWeeks) {
+            if (week == null || week.length == 0) {
                 System.out.println("empty week");
                 continue;
             }
-            for (var t: lst) {
-                if (t == null || t.size() == 0) System.out.print("\t");
-                else System.out.print(t.size()+"\t");
+            for (var day: week) {
+                if (day == null || day.matches.size() == 0) System.out.print("\t");
+                else System.out.print(day.matches.size()+"\t");
             }
             try {
-                System.out.println("; "+lst[0].get(0).time.toString());
+                System.out.println("; "+week[0].matches.get(0).time.toString());
             } catch (Exception e) {
                 System.out.println(";");
             }
