@@ -1,12 +1,15 @@
-package main;
+package data;
 
 import com.merakianalytics.orianna.Orianna;
 import com.merakianalytics.orianna.types.common.Region;
+import com.merakianalytics.orianna.types.core.staticdata.Champion;
+import com.merakianalytics.orianna.types.core.summoner.Summoner;
 import org.joda.time.DateTime;
 
 import java.io.*;
-import java.net.StandardSocketOptions;
 import java.util.*;
+
+import static com.merakianalytics.orianna.types.core.match.MatchHistory.*;
 
 public class Manager {
 
@@ -15,14 +18,24 @@ public class Manager {
     List<Player> summonersActive = new ArrayList<>();
     List<String> summonersInactive = new ArrayList<>();
 
-    public Manager (String filename) {
+    public Manager (String filename, String apiKey) {
+        this(apiKey);
         try {
             var br = new BufferedReader(new FileReader(filename));
             while (br.ready()) {
                 String l = br.readLine();
                 var summoners = new ArrayList<>(List.of(l.split("-")));
                 var name = summoners.remove(0);
-                users.add(new User(name, summoners, this));
+                List<Summoner> sums = new ArrayList<>();
+                for (String s: summoners) {
+                    try {
+                        sums.add(Summoner.named(s).get());
+                    } catch (Exception e) {
+                        System.out.println("Could not find summoner: "+s);
+                        continue;
+                    }
+                }
+                users.add(new User(name, sums, this));
             }
             System.out.println("Found " + users.size() + " users.");
             br.close();
@@ -34,12 +47,13 @@ public class Manager {
         }
     }
 
-    public static void main(final String[] args) {
-        Orianna.setRiotAPIKey(args[0]);
+    public Manager(String apiKey) {
+        Orianna.setRiotAPIKey(apiKey);
         Orianna.setDefaultRegion(Region.EUROPE_WEST);
+    }
 
-        var m = new Manager("names.txt");
-
+    public static void main(final String[] args) {
+        var m = new Manager("names-test.txt", args[0]);
         int totalSummoners = m.summonersActive.size() + m.summonersInactive.size();
         System.out.println("Found "+totalSummoners+" summoners, "+m.summonersInactive.size()+" inactive.");
         System.out.println("Found "+ m.games.size()+" games in total.");
@@ -48,12 +62,12 @@ public class Manager {
         //m.printMatrix(playedWith);
         m.writeGEXF(playedWith);
         var user = m.users.get(0);
-        //System.out.println("User: "+user.name);
-        //displayGames(gamesByWeek(gamesPerDay(user.matches)));
+        //System.out.println("data.User: "+user.name);
+        displayGames(gamesByWeek(user.matches));
         //System.out.println(user.matches.last().time.toString());
         int[] avgGamesDay = new int[7];
         for (User u: m.users) {
-            var t = avgGamesPerDay(u);
+            var t = totalGamesPerDay(u.matches);
             if (t == null) continue;
             for (int i= 0; i < 7; i++) {
                 avgGamesDay[i] += t[i];
@@ -62,8 +76,26 @@ public class Manager {
         printAvg(avgGamesDay);
     }
 
-    static int[] avgGamesPerDay(User u) {
-        List<Day[]> weeks = gamesByWeek(gamesPerDay(u.matches));
+
+    SortedSet<Game> gamesWith(Champion champ, Summoner summoner) {
+        SortedSet<Game> matches = new TreeSet<>();
+        for (var m: forSummoner(summoner).withChampions(champ).get()) {
+            matches.add(new Game(m));
+        }
+        return matches;
+    }
+
+    public static SortedSet<Game> gamesSince(DateTime date, SortedSet<Game> matches) {
+        SortedSet<Game> m2 = new TreeSet<>();
+        for (Game game: matches) {
+            if (game.time.isAfter(date))
+                m2.add(game);
+        }
+        return m2;
+    }
+
+    public static int[] totalGamesPerDay(SortedSet<Game> matches) {
+        List<Day[]> weeks = gamesByWeek(matches);
         int[] avgGpDay = new int[7];
         for (var a: avgGpDay) {
             a = 0;
@@ -77,17 +109,15 @@ public class Manager {
         return avgGpDay;
     }
 
-    static void printAvg(int[] avgDays) {
+    public static void printAvg(int[] avgDays) {
         if (avgDays == null) return;
         for (var a: avgDays) {
             //if (a == null) continue;
             System.out.print(a+"\t");
-
-
         }
     }
 
-    static SortedSet<Day> gamesPerDay(SortedSet<Game> matches) {
+    public static SortedSet<Day> gamesPerDay(SortedSet<Game> matches) {
         SortedSet days = new TreeSet<Day>();
 
         if (matches == null || matches.size() == 0) {
@@ -114,7 +144,8 @@ public class Manager {
      * Adds all games that are played within one day into a list.
      * Then add all day-lists into a total list.
      */
-    static List<Day[]> gamesByWeek(SortedSet<Day> days) {
+    public static List<Day[]> gamesByWeek(SortedSet<Game> matches) {
+        SortedSet<Day> days = Manager.gamesPerDay(matches);
         Day[] week = new Day[7];
         List<Day[]> listOfWeeks = new ArrayList<>();
 
@@ -124,15 +155,17 @@ public class Manager {
         var start = days.first().matches.get(0).time;
         int dayIndex = ((start.dayOfWeek().get() -1 ) % 7 + 7) % 7;
 
-
         for (var day : days) {
-            if (day == null || day.matches.size() == 0) {
+            /*if (day == null || day.matches.size() == 0) {
                 // TODO: doStuff
-                if (dayIndex < 0 || dayIndex > 6) dayIndex = 0;
-                week[dayIndex] = null;
+                if (dayIndex < 0 || dayIndex > 6) {
+                    System.out.println("dayIndex was "+dayIndex);
+                    dayIndex = 0;
+                }
+                week[dayIndex] = day;
                 dayIndex++;
                 continue;
-            }
+            }*/
             if (dayIndex > 6) {
                 // start new week;
                 listOfWeeks.add(week);
@@ -146,7 +179,7 @@ public class Manager {
         return listOfWeeks;
     }
 
-    static void displayGames(List<Day[]> listOfWeeks) {
+    public static void displayGames(List<Day[]> listOfWeeks) {
         System.out.println("\nStarting History");
         System.out.println("Mo, Di, Mi, Do, Fr, Sa, So");
         for (var week: listOfWeeks) {
@@ -167,7 +200,7 @@ public class Manager {
         System.out.println("End of history");
     }
 
-    private void printMatrix(int[][] playedWith) {
+    public void printMatrix(int[][] playedWith) {
         // TODO: Assumes player has < 10.000 games per entry (tab size  = 4)
         StringBuilder sb = new StringBuilder();
         sb.append("\t");

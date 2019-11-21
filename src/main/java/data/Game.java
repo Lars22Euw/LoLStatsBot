@@ -1,4 +1,4 @@
-package main;
+package data;
 
 import com.merakianalytics.orianna.types.core.match.Match;
 import org.joda.time.DateTime;
@@ -30,7 +30,7 @@ public class Game implements Comparable<Game> {
             this.queue = tmp[2];
         } catch (IndexOutOfBoundsException e) {
             e.printStackTrace();
-            System.out.println("Game from file was missing info.");
+            System.out.println("data.Game from file was missing info.");
         }
     }
 

@@ -1,4 +1,4 @@
-package main;
+package data;
 
 import org.joda.time.DateTime;
 
@@ -16,7 +16,6 @@ public class Day implements  Comparable<Day> {
     @Override
     public int compareTo(Day o) {
         var t = time.minus(o.time.getMillis());
-        int res = t.getMillis()<0 ? -1 : 1;
-        return res;
+        return t.getMillis() < 0 ? -1 : 1;
     }
 }

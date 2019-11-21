@@ -1,11 +1,11 @@
-package main;
+package data;
 
 import com.merakianalytics.orianna.types.core.match.Match;
+import com.merakianalytics.orianna.types.core.match.MatchHistory;
 import com.merakianalytics.orianna.types.core.summoner.Summoner;
 import org.joda.time.DateTime;
 
 import java.io.*;
-import java.util.List;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
@@ -14,18 +14,21 @@ import java.util.TreeSet;
  *  and all recorded games for that player.
  */
 public class Player {
-    private final Summoner summoner;
+    private Summoner summoner = null;
     String name;
-    SortedSet<Game> matches = new TreeSet<>();
+    public SortedSet<Game> matches = new TreeSet<>();
 
     private static final String folder = "summoners\\";
 
-    Player(String name, Manager manager) {
-        this.name = name;
+    public Player(Summoner sum, Manager manager) {
+        this.name = sum.getName().replace(" ", "");
+        this.summoner = sum;
         var latest = read(manager);
-        this.summoner = Summoner.named(name).get();
-        var history = summoner.matchHistory().withStartTime(latest).get();
-        //TODO: Garen selection
+
+        System.out.println("hello");
+        MatchHistory history = summoner.matchHistory().withStartTime(latest).get();
+        System.out.println("history "+history.exists());
+
         for (Match match: history) {
             var game = new Game(match);
             matches.add(game);
@@ -37,7 +40,8 @@ public class Player {
             manager.summonersInactive.add(name);
         } else {
             manager.summonersActive.add(this);
-            System.out.println("Found "+history.size()+" new Games for "+name);
+            var size = history.size()-1;
+            System.out.println(" + "+size+" new Games.");
         }
 
         write();
@@ -56,9 +60,10 @@ public class Player {
                 matches.add(game);
                 manager.games.add(game);
             }
+            System.out.print(name+" "+matches.size());
         } catch (FileNotFoundException e) {
             // TODO: no file found. init empty set.
-            System.out.println("Player "+name+" has no file.");
+            System.out.println(name+" has no file.");
             matches = new TreeSet<>();
         } catch (IOException e) {
             e.printStackTrace();
