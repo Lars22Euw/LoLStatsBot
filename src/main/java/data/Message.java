@@ -19,7 +19,7 @@ public class Message {
     StringBuilder sb;
     boolean inputError;
 
-    public Message(String input) {
+    public Message(String input, Manager manager) {
         System.out.println("hello123");
         sb = new StringBuilder();
         inputError = false;
@@ -31,7 +31,15 @@ public class Message {
             return;
         }
         summoner = tmp[1];
-        sb.append(historyAvg(summoner));
+        Summoner sum = Summoner.named(summoner).get();
+        if (sum == null || !sum.exists()) {
+            sb.append("Summoner named "+summoner+" wasn't found in euw.\n");
+            inputError = true;
+            return;
+        }
+        System.out.println("Summoner "+summoner +" is "+sum.exists());
+
+        sb.append(historyAvg(sum));
        /*
        sb.append(historyAvg(summoner, champ));
        */
@@ -40,56 +48,55 @@ public class Message {
         //    champ = tmp[2];
     }
 
-    public String historyAvg(String summoner) {
-        Summoner sum = Summoner.named(summoner).get();
-        if (sum == null || !sum.exists())
-            return "Summoner named "+summoner+" wasn't found in euw.\n";
-
-        System.out.println("Summoner named: "+summoner +" was "+sum.exists());
-
-        var player = new Player(sum, manager);
-
-        System.out.println("player build.");
-
-        DateTime date1 = DateTime.now().withMonthOfYear(8);
-        var subset = manager.gamesSince(date1, player.matches);
-        List<Day[]> weeks = Manager.gamesByWeek(subset);
-
+    private String weeksToString(List<Day[]> weeks) {
+        var sbInner = new StringBuilder();
         for (var week: weeks) {
             if (week == null) {
-                sb.append("Empty week");
+                sbInner.append("Empty week");
                 continue;
             }
             int c = 0;
             for (Day day: week) {
                 if (day == null) {
-                    sb.append("\t");
+                    sbInner.append("\t");
                     continue;
                 }
                 int tmp = day.matches.size();
                 if (tmp == 0) {
-                    sb.append("\t");
+                    sbInner.append("\t");
                 } else {
-                    String s = tmp +"    ";
-                    s = s.substring(0, 4);
-                    sb.append(s);
+                    sbInner.append(asString(tmp));
                 }
                 c += tmp;
             }
             try {
                 var time = week[0].matches.get(0).time;
-                String weekSum = (c +"    ").substring(0, 4);
-                String date = time.dayOfMonth().get()+"."+time.monthOfYear().get()+"."+time.yearOfCentury().get();
-                sb.append(weekSum+date+"\n");
+                String date = "KW " + time.weekyear().get() + " " + time.yearOfCentury().get();
+                sbInner.append(asString(c)+date+"\n");
 
             } catch (Exception e) {
-                sb.append(c+"\n");
+                sbInner.append(c+"\n");
             }
         }
-        var avg = Manager.totalGamesPerDay(player.matches);
+        return sbInner.toString();
+    }
+
+    private String asString(int a) {
+        return (a+"    ").substring(0, 3);
+    }
+
+    public String historyAvg(Summoner sum) {
+        var player = new Player(sum, manager);
+        System.out.println("player build.");
+
+        DateTime date1 = DateTime.now().withMonthOfYear(8);
+        var subset = manager.gamesSince(date1, player.matches);
+        List<Day[]> weeks = Manager.gamesByWeek(subset);
+        sb.append(weeksToString(weeks));
+
+        var avg = Manager.totalGamesPerDay(subset);
         for (var a: avg) {
-            String s = (a+"    ").substring(0, 4);
-            sb.append(s);
+            sb.append(asString(a));
         }
         sb.append("\n");
         System.out.println("end of history");
