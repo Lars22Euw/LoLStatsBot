@@ -17,10 +17,10 @@ public class Bot {
     private static final Map<String, Command> commands = new HashMap<>();
     private static final String PREFIX = ".";
 
-    final DiscordClient client;
-    Manager manager;
+    private DiscordClient client;
+    private Manager manager;
 
-     Bot(String riotAPI, String discordAPI) {
+     private Bot(String riotAPI, String discordAPI) {
         manager = new Manager(riotAPI);
         client = new DiscordClientBuilder(discordAPI).build();
         commands.put("matches", event -> event.getMessage().getChannel()
@@ -29,7 +29,7 @@ public class Bot {
 
     }
 
-    String message(String input) {
+    private String message(String input) {
          if (manager == null) System.out.println("manager is null");
          return new Message(input, manager).build();
     }

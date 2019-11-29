@@ -13,12 +13,12 @@ import static com.merakianalytics.orianna.types.core.match.MatchHistory.*;
 
 public class Manager {
 
-    public List<User> users = new ArrayList<>();
+    List<User> users = new ArrayList<>();
     SortedSet<Game> games = new TreeSet<>();
     List<Player> summonersActive = new ArrayList<>();
     List<String> summonersInactive = new ArrayList<>();
 
-    public Manager (String filename, String apiKey) {
+    private Manager (String filename, String apiKey) {
         this(apiKey);
         try {
             var br = new BufferedReader(new FileReader(filename));
@@ -28,11 +28,11 @@ public class Manager {
                 var name = summoners.remove(0);
                 List<Summoner> sums = new ArrayList<>();
                 for (String s: summoners) {
-                    try {
-                        sums.add(Summoner.named(s).get());
-                    } catch (Exception e) {
+                    var sum = Summoner.named(s).get();
+                    if (sum == null || !sum.exists()) {
                         System.out.println("Could not find summoner: "+s);
-                        continue;
+                    } else {
+                        sums.add(sum);
                     }
                 }
                 users.add(new User(name, sums, this));
@@ -47,7 +47,7 @@ public class Manager {
         }
     }
 
-    public Manager(String apiKey) {
+    Manager(String apiKey) {
         Orianna.setRiotAPIKey(apiKey);
         Orianna.setDefaultRegion(Region.EUROPE_WEST);
     }
@@ -68,14 +68,13 @@ public class Manager {
         int[] avgGamesDay = new int[7];
         for (User u: m.users) {
             var t = totalGamesPerDay(u.matches);
-            if (t == null) continue;
+            //if (t == null) continue;
             for (int i= 0; i < 7; i++) {
                 avgGamesDay[i] += t[i];
             }
         }
         printAvg(avgGamesDay);
     }
-
 
     SortedSet<Game> gamesWith(Champion champ, Summoner summoner) {
         SortedSet<Game> matches = new TreeSet<>();
@@ -85,7 +84,7 @@ public class Manager {
         return matches;
     }
 
-    public static SortedSet<Game> gamesSince(DateTime date, SortedSet<Game> matches) {
+    static SortedSet<Game> gamesSince(DateTime date, SortedSet<Game> matches) {
         SortedSet<Game> m2 = new TreeSet<>();
         for (Game game: matches) {
             if (game.time.isAfter(date))
@@ -94,12 +93,9 @@ public class Manager {
         return m2;
     }
 
-    public static int[] totalGamesPerDay(SortedSet<Game> matches) {
+    static int[] totalGamesPerDay(SortedSet<Game> matches) {
         List<Day[]> weeks = gamesByWeek(matches);
         int[] avgGpDay = new int[7];
-        for (var a: avgGpDay) {
-            a = 0;
-        }
         for (var week: weeks) {
             for (int i = 0; i < 7; i++) {
                 if (week == null || week[i] == null || week[i].matches == null) continue;
@@ -109,7 +105,7 @@ public class Manager {
         return avgGpDay;
     }
 
-    public static void printAvg(int[] avgDays) {
+    static void printAvg(int[] avgDays) {
         if (avgDays == null) return;
         for (var a: avgDays) {
             //if (a == null) continue;
@@ -117,7 +113,7 @@ public class Manager {
         }
     }
 
-    public static SortedSet<Day> gamesPerDay(SortedSet<Game> matches) {
+    static SortedSet<Day> gamesPerDay(SortedSet<Game> matches) {
         SortedSet days = new TreeSet<Day>();
 
         if (matches == null || matches.size() == 0) {
@@ -144,14 +140,14 @@ public class Manager {
      * Adds all games that are played within one day into a list.
      * Then add all day-lists into a total list.
      */
-    public static List<Day[]> gamesByWeek(SortedSet<Game> matches) {
+    static List<Day[]> gamesByWeek(SortedSet<Game> matches) {
         SortedSet<Day> days = Manager.gamesPerDay(matches);
         Day[] week = new Day[7];
         List<Day[]> listOfWeeks = new ArrayList<>();
 
-        if (days == null || days.size() == 0)
+        /*if (days == null || days.size() == 0)
             return listOfWeeks;
-
+        */
         var start = days.first().matches.get(0).time;
         int dayIndex = ((start.dayOfWeek().get() -1 ) % 7 + 7) % 7;
 
@@ -179,7 +175,7 @@ public class Manager {
         return listOfWeeks;
     }
 
-    public static void displayGames(List<Day[]> listOfWeeks) {
+    private static void displayGames(List<Day[]> listOfWeeks) {
         System.out.println("\nStarting History");
         System.out.println("Mo, Di, Mi, Do, Fr, Sa, So");
         for (var week: listOfWeeks) {
@@ -204,14 +200,13 @@ public class Manager {
         // TODO: Assumes player has < 10.000 games per entry (tab size  = 4)
         StringBuilder sb = new StringBuilder();
         sb.append("\t");
-        for (int i = 0; i < users.size(); i++) {
-            sb.append(users.get(i).name.substring(0, 3) + "\t");
-        }
+        for (var user: users)
+            sb.append(user.name, 0, 3).append("\t");
         System.out.println(sb);
 
         for (int i = 0; i < users.size(); i++) {
             sb = new StringBuilder();
-            sb.append(users.get(i).name.substring(0, 3)).append("\t");
+            sb.append(users.get(i).name, 0, 3).append("\t");
             for (int j = 0; j < users.size(); j++) {
                 if ((Integer.toString(playedWith[i][j])).length() >= 4)
                     sb.append(playedWith[i][j]);
@@ -280,10 +275,7 @@ public class Manager {
         for (int i = 0; i < playedWith.length; i++) {
             for (int j = i+1; j < playedWith[i].length; j++) {
                 if (playedWith[i][j] == 0) continue;
-                sb.append("\t\t\t<edge id=\""+edges+"\" " +
-                        "source=\""+(float)i+"\" " +
-                        "target=\""+(float)j+"\" " +
-                        "weight=\""+(float) playedWith[i][j]+"\"/>\n");
+                sb.append("\t\t\t<edge id=\"").append(edges).append("\" ").append("source=\"").append((float) i).append("\" ").append("target=\"").append((float) j).append("\" ").append("weight=\"").append((float) playedWith[i][j]).append("\"/>\n");
         // \t\t\t<edge id="0" source="0.0" target="1.0" weight="14.0"/>
                 edges++;
             }
