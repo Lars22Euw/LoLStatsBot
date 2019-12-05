@@ -25,9 +25,8 @@ public class Player {
         this.summoner = sum;
         var latest = read(manager);
 
-        System.out.println("hello");
         MatchHistory history = summoner.matchHistory().withStartTime(latest).get();
-        System.out.println("history "+history.exists());
+        //System.out.println("history "+history.exists());
 
         for (Match match: history) {
             var game = new Game(match);
@@ -38,6 +37,8 @@ public class Player {
         if (matches == null ||matches.size() == 0) {
             System.out.println(name+ " played 0 games.");
             manager.summonersInactive.add(name);
+        } else  if (history.size() <= 1) {
+            System.out.println("");
         } else {
             manager.summonersActive.add(this);
             var size = history.size()-1;

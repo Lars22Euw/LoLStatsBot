@@ -52,8 +52,20 @@ public class Manager {
         Orianna.setDefaultRegion(Region.EUROPE_WEST);
     }
 
-    public static void main(final String[] args) {
-        var m = new Manager("names-test.txt", args[0]);
+    public static void main(final String[] args) throws InterruptedException {
+        var rd = new RankDistribution(new Manager(args[0]), "gameIds.txt");
+
+        rd.extractPlayers();
+        //rd.summoners.add(Summoner.named("TheLars22").get());
+        //rd.summoners.add(Summoner.named("TheNonamed").get());
+        rd.sortByRankedGames();
+        rd.printBuckets();
+
+
+        for (int a: List.of(0, 5, 9, 10, 11, 29, 30, 31, 71)) {
+            //System.out.println(a +" "+rd.getBucketIndex(a));
+        }
+        /*var m = new Manager("names-test.txt", args[0]);
         int totalSummoners = m.summonersActive.size() + m.summonersInactive.size();
         System.out.println("Found "+totalSummoners+" summoners, "+m.summonersInactive.size()+" inactive.");
         System.out.println("Found "+ m.games.size()+" games in total.");
@@ -73,7 +85,7 @@ public class Manager {
                 avgGamesDay[i] += t[i];
             }
         }
-        printAvg(avgGamesDay);
+        printAvg(avgGamesDay);*/
     }
 
     SortedSet<Game> gamesWith(Champion champ, Summoner summoner) {

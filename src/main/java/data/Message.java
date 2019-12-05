@@ -18,7 +18,7 @@ class Message {
     private StringBuilder sb;
     private DateTime date;
     private boolean inputError;
-    private static final int SUBSET = 3;
+    private static final int SUBSET = 1;
 
     Message(String input, Manager manager) {
         this.manager = manager;
@@ -42,18 +42,23 @@ class Message {
             return;
         }
         //System.out.println("Summoner "+summoner +" is "+sum.exists());
+        if (tmp.length == 2)
+            sb.append(historyAvg(sum));
 
-        sb.append(historyAvg(sum));
 
-
-        System.out.println("a \n" +sb.toString());
-        if (tmp[2].equalsIgnoreCase("with")) {
-            champ = tmp[2];
+        //   --0--   --1--  --2-- --3--
+        // .matches SUMMONER with CHAMP
+        System.out.println(sb.toString());
+        if (tmp[2].equalsIgnoreCase("with") && tmp.length >= 3) {
+            champ = tmp[3];
         }
-        var tmp2 = Champion.named(champ).get();
-        if (tmp2 == null || !tmp2.exists()) {
-            System.out.println("hello champ");
-            sb.append(historyAvg(sum, tmp2));
+        var champion = Champion.named(champ).get();
+        if (champion == null || !champion.exists()) {
+            System.out.println("no champ.");
+        } else {
+            System.out.println("hello "+champ);
+            sb.append(historyAvg(sum, champion));
+
         }
     }
 
@@ -68,13 +73,17 @@ class Message {
     }
 
     private String weeksToString(List<Day[]> weeks) {
+        var days = List.of("Mo", "Tu", "We", "Th", "Fr", "Sa", "Su");
         var sbInfo = new StringBuilder();
         var sbSum = new StringBuilder();
-        var listOfSB = new ArrayList<StringBuilder>();
+        var dailySBs = new ArrayList<StringBuilder>();
         for (int i = 0; i < 7; i++) {
-            listOfSB.add(new StringBuilder());
+            dailySBs.add(new StringBuilder());
+            dailySBs.get(i).append(days.get(i)).append(": ");
         }
 
+        sbInfo.append("KW: ");
+        sbSum.append("Sum ");
         var time = getFirstMonday(weeks.get(0));
 
 
@@ -89,14 +98,14 @@ class Message {
                 var day = week[i];
 
                 if (day == null) {
-                    sb.append("   ");
+                    dailySBs.get(i).append("   ");
                     continue;
                 }
                 int tmp = day.matches.size();
                 if (tmp == 0) {
-                    listOfSB.get(i).append("   ");
+                    dailySBs.get(i).append("   ");
                 } else {
-                    listOfSB.get(i).append(asString(tmp));
+                    dailySBs.get(i).append(asString(tmp));
                 }
                 c += tmp;
             }
@@ -114,7 +123,7 @@ class Message {
         }
         var result = new StringBuilder();
         result.append(sbInfo.toString()).append("\n");
-        for (var sbN : listOfSB)
+        for (var sbN : dailySBs)
             result.append(sbN.toString()).append("\n");
         result.append(sbSum.toString()).append("\n");
         return result.toString();
