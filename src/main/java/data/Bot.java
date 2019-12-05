@@ -1,15 +1,12 @@
 package data;
 
-import com.merakianalytics.orianna.Orianna;
 import discord4j.core.DiscordClient;
 import discord4j.core.DiscordClientBuilder;
 import discord4j.core.event.domain.message.MessageCreateEvent;
+import discord4j.core.object.entity.MessageChannel;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.io.BufferedWriter;
-import java.io.FileWriter;
-import java.io.IOException;
 import java.util.*;
 
 public class Bot {
@@ -24,9 +21,22 @@ public class Bot {
         manager = new Manager(riotAPI);
         client = new DiscordClientBuilder(discordAPI).build();
         commands.put("matches", event -> event.getMessage().getChannel()
-                .flatMap(channel -> channel.createMessage(message(event.getMessage().getContent().get())))
+                .flatMap(channel -> {
+                    return Mono.just(helper(channel, event));
+                })
                 .then());
 
+    }
+
+    Flux<List<Mono<discord4j.core.object.entity.Message>>> helper(MessageChannel channel, MessageCreateEvent event) {
+         List<Mono<discord4j.core.object.entity.Message>> messages = new ArrayList();
+         String m = message(event.getMessage().getContent().get());
+
+         for (int i= 0; i < m.length() / 1995; i++) {
+           messages.add(channel.createMessage("```"+m.substring(i, Math.min(i*1995, m.length()))+"```"));
+         }
+
+        return Flux.just(messages);
     }
 
     private String message(String input) {

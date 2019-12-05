@@ -170,14 +170,14 @@ class Message {
     String build() {
         System.out.println("did build");
         StringBuilder sb2 = new StringBuilder();
-        sb2.append("```");
+
         if (!inputError) {
             sb2.append("Matches per day for ").append(summoner).append(":\n");
             sb2.append("Mo  Tu  We  Th  Fr  Sa  Su  sum  week\n");
         }
         System.out.println(sb.toString());
         sb2.append(sb.toString());
-        sb2.append("```");
+
         return sb2.toString();
     }
 }
