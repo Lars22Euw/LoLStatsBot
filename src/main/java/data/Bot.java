@@ -3,16 +3,42 @@ package data;
 import discord4j.core.DiscordClient;
 import discord4j.core.DiscordClientBuilder;
 import discord4j.core.event.domain.message.MessageCreateEvent;
-import discord4j.core.object.entity.MessageChannel;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
+import discord4j.core.object.entity.Message;
 
 import java.util.*;
 
 public class Bot {
 
-    private static final Map<String, Command> commands = new HashMap<>();
     private static final String PREFIX = ".";
+    private List<Command> commands = List.of(
+            new Command("matches", this::matches),
+            new Command("m", this::matches),
+            new Command("help", this::help),
+            new Command("h", this::help));
+
+    private Integer matches(Message message) {
+        var msgText = message.getContent().get();
+        var resp = message(msgText);
+        if (resp == null || resp.length == 0) {
+            System.out.println("Empty msg");
+        }
+        StringBuilder sb = new StringBuilder();
+        for (var line: resp) {
+            if (sb.length() > 1900) {
+                message.getChannel().block().createMessage("LoL matches per day:" +"```"+sb.toString()+"```").block();
+                sb = new StringBuilder();
+            }
+            sb.append(line).append("\n");
+        }
+        message.getChannel().block().createMessage("```"+sb.toString()+"```").block();
+        return 0;
+    }
+
+    private Integer help(Message message) {
+        message.getChannel().block().createMessage("You can message this bot directly.\n" +
+                "`.m` will list matches per day for a given user.").block();
+        return 0;
+    }
 
     private DiscordClient client;
     private Manager manager;
@@ -20,28 +46,12 @@ public class Bot {
      private Bot(String riotAPI, String discordAPI) {
         manager = new Manager(riotAPI);
         client = new DiscordClientBuilder(discordAPI).build();
-        commands.put("matches", event -> event.getMessage().getChannel()
-                .flatMap(channel -> {
-                    return Mono.just(helper(channel, event));
-                })
-                .then());
 
     }
 
-    Flux<List<Mono<discord4j.core.object.entity.Message>>> helper(MessageChannel channel, MessageCreateEvent event) {
-         List<Mono<discord4j.core.object.entity.Message>> messages = new ArrayList();
-         String m = message(event.getMessage().getContent().get());
-
-         for (int i= 0; i < m.length() / 1995; i++) {
-           messages.add(channel.createMessage("```"+m.substring(i, Math.min(i*1995, m.length()))+"```"));
-         }
-
-        return Flux.just(messages);
-    }
-
-    private String message(String input) {
+    private String[] message(String input) {
          if (manager == null) System.out.println("manager is null");
-         return new Message(input, manager).build();
+         return new MyMessage(input, manager).build();
     }
 
     public static void main(String[] args) {
@@ -50,13 +60,28 @@ public class Bot {
         s.client.login().block();
     }
 
-    private static void getCommands(DiscordClient client) {
+    private void getCommands(DiscordClient client) {
+        client.getEventDispatcher().on(MessageCreateEvent.class)
+                .subscribe(event -> {
+                    var msgText = event.getMessage().getContent().orElse(null);
+                    if (msgText == null) return;
+                    var parts = msgText.split(" ");
+                    for (var c: commands) {
+                        //System.out.println(parts[0]);
+                        if ((PREFIX+c.argument).equalsIgnoreCase(parts[0])) {
+                            c.func.apply(event.getMessage());
+                            break;
+                        }
+                    }
+                });
+
+/*         // ########
         client.getEventDispatcher().on(MessageCreateEvent.class)
                 .flatMap(event -> Mono.justOrEmpty(event.getMessage().getContent())
                         .flatMap(content -> Flux.fromIterable(commands.entrySet())
                                 .filter(entry -> content.startsWith(PREFIX+entry.getKey()))
                                 .flatMap(entry -> entry.getValue().execute(event))
                                 .next()))
-                .subscribe();
+                .subscribe();*/
     }
 }

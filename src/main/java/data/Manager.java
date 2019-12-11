@@ -1,9 +1,11 @@
 package data;
 
 import com.merakianalytics.orianna.Orianna;
+import com.merakianalytics.orianna.types.common.Queue;
 import com.merakianalytics.orianna.types.common.Region;
 import com.merakianalytics.orianna.types.core.staticdata.Champion;
 import com.merakianalytics.orianna.types.core.summoner.Summoner;
+import com.sun.source.tree.Tree;
 import org.joda.time.DateTime;
 
 import java.io.*;
@@ -88,18 +90,34 @@ public class Manager {
         printAvg(avgGamesDay);*/
     }
 
-    SortedSet<Game> gamesWith(Champion champ, Summoner summoner) {
+    SortedSet<Game> gamesWith(List<Champion> champions, Summoner summoner) {
         SortedSet<Game> matches = new TreeSet<>();
-        for (var m: forSummoner(summoner).withChampions(champ).get()) {
-            matches.add(new Game(m));
+        if (champions == null || champions.size() == 0) {
+            return new Player(summoner, this).matches;
+        }
+        for (var champ: champions) {
+            for (var m: forSummoner(summoner).withChampions(champ).get()) {
+                matches.add(new Game(m));
+            }
         }
         return matches;
     }
 
     static SortedSet<Game> gamesSince(DateTime date, SortedSet<Game> matches) {
+        if (date == null || date == DateTime.now()) return matches;
         SortedSet<Game> m2 = new TreeSet<>();
         for (Game game: matches) {
             if (game.time.isAfter(date))
+                m2.add(game);
+        }
+        return m2;
+    }
+
+    static  SortedSet<Game> gamesBefore(DateTime date, SortedSet<Game> matches) {
+        if (date == null || date == DateTime.now()) return matches;
+        SortedSet<Game> m2 = new TreeSet<>();
+        for (Game game: matches) {
+            if (game.time.isBefore(date))
                 m2.add(game);
         }
         return m2;
@@ -293,5 +311,39 @@ public class Manager {
             }
         }
         return edges;
+    }
+
+    SortedSet<Game> withQueues(List<Queue> queues, SortedSet<Game> matches) {
+        if (queues == null || queues.size() == 0) return matches;
+        SortedSet<Game> result = new TreeSet();
+        for (var game : matches)
+            for (var q : queues) {
+                if (game.queue.equalsIgnoreCase(q.name()))
+                    result.add(game);
+            }
+        return result;
+    }
+
+    public SortedSet<Game> gamesWith(List<Summoner> summoners, List<Champion> champions, List<Queue> queues, DateTime startDate, DateTime endDate) {
+        SortedSet<Game> result = new TreeSet();
+        SortedSet<Long> ids = new TreeSet();
+        if (summoners == null || summoners.size() == 0) return result;
+        result = gamesWith(champions, summoners.get(0));
+        for (var game: result) {
+            ids.add(game.id);
+        }
+        summoners.remove(0);
+        SortedSet<Game> together = new TreeSet();
+        // TODO: 3+ summoners together. (old code)
+        for (var summoner: summoners) {
+            for (var game: gamesWith(champions, summoner)) {
+                if(ids.contains(game.id))
+                    together.add(game);
+            }
+        }
+        together = Manager.gamesSince(startDate, together);
+        together = Manager.gamesBefore(endDate, together);
+        together = withQueues(queues, together);
+        return together;
     }
 }
