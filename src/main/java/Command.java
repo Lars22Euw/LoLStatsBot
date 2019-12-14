@@ -1,5 +1,3 @@
-package data;
-
 import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.object.entity.Message;
 import org.reactivestreams.Publisher;

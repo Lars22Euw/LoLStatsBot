@@ -1,11 +1,8 @@
-package data;
-
 import com.merakianalytics.orianna.Orianna;
 import com.merakianalytics.orianna.types.common.Queue;
 import com.merakianalytics.orianna.types.common.Region;
 import com.merakianalytics.orianna.types.core.staticdata.Champion;
 import com.merakianalytics.orianna.types.core.summoner.Summoner;
-import com.sun.source.tree.Tree;
 import org.joda.time.DateTime;
 
 import java.io.*;
@@ -76,7 +73,7 @@ public class Manager {
         //m.printMatrix(playedWith);
         m.writeGEXF(playedWith);
         var user = m.users.get(0);
-        //System.out.println("data.User: "+user.name);
+        //System.out.println("User: "+user.name);
         displayGames(gamesByWeek(user.matches));
         //System.out.println(user.matches.last().time.toString());
         int[] avgGamesDay = new int[7];
