@@ -64,7 +64,7 @@ class MyMessage {
                     case "-c": { // with CHAMPION
                         index++;
                         if (index >= tokens.length) break;
-                        champions.add(parseChamp(tokens[index]));
+                        champions.addAll(parseChamps(tokens[index]));
                         break;
                     }
                     case "-q": { // with QUEUE
@@ -90,7 +90,7 @@ class MyMessage {
 
         SortedSet<Game> matches = manager.gamesWith(summoners, champions, queues, startDate, endDate);
         if (matches == null || matches.size() == 0) {
-            System.out.println("No games found");
+            System.out.println("wtf. No games found");
             sb.append("No games found.\n");
             return;
         }
@@ -106,14 +106,19 @@ class MyMessage {
         return queue;
     }
 
-    private Champion parseChamp(String token) throws InputError {
-        var champion = Champion.named(token).get();
-        if (champion == null || !champion.exists()) {
-            throw new InputError("Input didn't match a champion.\n");
-        } else {
-            System.out.println("hello "+token);
+    private List<Champion> parseChamps(String token) throws InputError {
+        var result = new ArrayList<Champion>();
+        for (var c: token.split(",")) {
+            var champion = Champion.named(token).get();
+            if (champion == null || !champion.exists()) {
+                throw new InputError("Input didn't match a champion.\n");
+            } else {
+                System.out.println("hello "+c);
+                result.add(champion);
+            }
         }
-        return champion;
+
+        return result;
     }
 
     private Summoner parseSummoner(String token) throws InputError {
@@ -199,7 +204,7 @@ class MyMessage {
                 // TODO: test kw display
                 //time = week[0].matches.get(0).time;
                 //"KW " +
-                String date = time.getWeekOfWeekyear()+1 + " "; //+ time.yearOfCentury().get();
+                String date = time.getWeekOfWeekyear() + " "; //+ time.yearOfCentury().get();
                 sbInfo.append(asString(date));
                 sbSum.append(asString(c));
                 time = time.plusWeeks(1);

@@ -117,6 +117,7 @@ public class Manager {
             if (game.time.isBefore(date))
                 m2.add(game);
         }
+        System.out.println("Games before: "+m2.size()+" total: "+matches.size());
         return m2;
     }
 
@@ -323,24 +324,44 @@ public class Manager {
 
     public SortedSet<Game> gamesWith(List<Summoner> summoners, List<Champion> champions, List<Queue> queues, DateTime startDate, DateTime endDate) {
         SortedSet<Game> result = new TreeSet();
-        SortedSet<Long> ids = new TreeSet();
+
         if (summoners == null || summoners.size() == 0) return result;
         result = gamesWith(champions, summoners.get(0));
-        for (var game: result) {
+
+        if (summoners.size() >= 2) {
+            summoners.remove(0);
+            result = gamesWithPlayers(summoners, champions, result);
+        }
+
+        result = Manager.gamesSince(startDate, result);
+        result = Manager.gamesBefore(endDate, result);
+        result = withQueues(queues, result);
+        return result;
+    }
+
+    /**
+     * takes a list of summoners, where all their games with the same id as the given matches list will be returned
+     * @param summoners list of summoners to compare with
+     * @param champions
+     * @param matches
+     * @return games played together by all players.
+     */
+    private SortedSet<Game> gamesWithPlayers(List<Summoner> summoners, List<Champion> champions, SortedSet<Game> matches) {
+        if (summoners == null || summoners.size() == 0) return matches;
+
+        SortedSet<Long> ids = new TreeSet();
+        for (var game: matches) {
             ids.add(game.id);
         }
-        summoners.remove(0);
-        SortedSet<Game> together = new TreeSet();
-        // TODO: 3+ summoners together. (old code)
-        for (var summoner: summoners) {
-            for (var game: gamesWith(champions, summoner)) {
-                if(ids.contains(game.id))
-                    together.add(game);
+        SortedSet<Game> gamesTogether = new TreeSet();
+
+        for (var game: gamesWith(champions, summoners.get(0))) {
+            if(ids.contains(game.id)) {
+                gamesTogether.add(game);
             }
         }
-        together = Manager.gamesSince(startDate, together);
-        together = Manager.gamesBefore(endDate, together);
-        together = withQueues(queues, together);
-        return together;
+
+        summoners.remove(0);
+        return gamesWithPlayers(summoners, champions, gamesTogether);
     }
 }
