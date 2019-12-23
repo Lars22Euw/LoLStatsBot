@@ -14,17 +14,22 @@ import java.util.TreeSet;
 public class Player {
     private Summoner summoner = null;
     String name;
-    public SortedSet<Game> matches = new TreeSet<>();
+    public SortedSet<Game> matches = new TreeSet<>(Game::compare2);
 
     private static final String folder = "summoners\\";
+
+    public Player() {
+
+    }
 
     public Player(Summoner sum, Manager manager) {
         this.name = sum.getName().replace(" ", "");
         this.summoner = sum;
         var latest = read(manager);
 
+        System.out.println(latest.toString());
+        System.out.println("matches size: "+matches.size());
         MatchHistory history = summoner.matchHistory().withStartTime(latest).get();
-        //System.out.println("history "+history.exists());
 
         for (Match match: history) {
             var game = new Game(match);
@@ -63,10 +68,11 @@ public class Player {
         } catch (FileNotFoundException e) {
             // TODO: no file found. init empty set.
             System.out.println(name+" has no file.");
-            matches = new TreeSet<>();
+            matches = new TreeSet<>(Game::compare2);
         } catch (IOException e) {
             e.printStackTrace();
         }
+
         if (matches.size() != 0)
             return matches.last().time;
         return DateTime.now().minusYears(4);
@@ -85,5 +91,7 @@ public class Player {
         }
 
     }
+
+
 
 }

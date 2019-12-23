@@ -8,6 +8,10 @@ import java.util.*;
 public class Bot {
 
     private static final String PREFIX = ".";
+
+    private DiscordClient client;
+    private Manager manager;
+
     private List<Command> commands = List.of(
             new Command("matches", this::matches),
             new Command("m", this::matches),
@@ -34,14 +38,11 @@ public class Bot {
 
     private Integer help(Message message) {
         message.getChannel().block().createMessage("You can message this bot directly.\n" +
-                "`.m` will list matches per day for a given user.").block();
+                "`.matches` will list matches per day for a given user.").block();
         return 0;
     }
 
-    private DiscordClient client;
-    private Manager manager;
-
-     private Bot(String riotAPI, String discordAPI) {
+     Bot(String riotAPI, String discordAPI) {
         manager = new Manager(riotAPI);
         client = new DiscordClientBuilder(discordAPI).build();
 

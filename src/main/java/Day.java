@@ -8,12 +8,11 @@ public class Day implements  Comparable<Day> {
     DateTime time;
 
     Day(DateTime time) {
-        this.time = time.minusDays(1);
+        this.time = time;
     }
 
     @Override
     public int compareTo(Day o) {
-        var t = time.minus(o.time.getMillis());
-        return t.getMillis() < 0 ? -1 : 1;
+        return (int) ((this.time.getMillis() - o.time.getMillis())/1000);
     }
 }

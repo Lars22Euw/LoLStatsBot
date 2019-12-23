@@ -30,10 +30,10 @@ class MyMessage {
 
         List<Queue> queues = new ArrayList<>();
         List<Champion> champions = new ArrayList<>();
-        List<Summoner> summoners = new ArrayList<>();
+        List<Summoner> summoners;
 
         try {
-            summoners.add(parseSummoner(tokens[1]));
+            summoners = new ArrayList<>(parseSummoners(tokens[1]));
         } catch (InputError e) {
             sb.append(e.error);
             return;
@@ -45,7 +45,7 @@ class MyMessage {
                     default: {
                         // TODO:
                         System.out.println("unexpected token:");
-                        sb.append("unexpected Token at index: "+index+" "+tokens[index]);
+                        sb.append("unexpected Token at index: ").append(index).append(" ").append(tokens[index]);
                         break;
                     }
                     case "-t": {
@@ -58,7 +58,7 @@ class MyMessage {
                     case "-w": { // with SUMMONER
                         index++;
                         if (index >= tokens.length) break;
-                        summoners.add(parseSummoner(tokens[index]));
+                        summoners.addAll(parseSummoners(tokens[index]));
                         break;
                     }
                     case "-c": { // with CHAMPION
@@ -82,8 +82,9 @@ class MyMessage {
         }
 
         if (startDate == null || !startTimeSet)
-            startDate = setStartDate(MONTHS_IN_THE_PAST, 6);
+            startDate = setStartDate(MONTHS_IN_THE_PAST, 1);
 
+        // TODO: time is displayed wrong.
         System.out.println("Args: sums champs queues "+summoners.size()+" "+champions.size()+" "+queues.size()+
                 "\nStart: "+startDate.toString("EE ee. MM. yyyy")+
                 "\nEnd:   "+endDate.toString("EE ee. MM. yyyy"));
@@ -109,7 +110,8 @@ class MyMessage {
     private List<Champion> parseChamps(String token) throws InputError {
         var result = new ArrayList<Champion>();
         for (var c: token.split(",")) {
-            var champion = Champion.named(token).get();
+            var cname = c.substring(0, 1).toUpperCase() + c.substring(1).toLowerCase();
+            var champion = Champion.named(cname).get();
             if (champion == null || !champion.exists()) {
                 throw new InputError("Input didn't match a champion.\n");
             } else {
@@ -121,13 +123,18 @@ class MyMessage {
         return result;
     }
 
-    private Summoner parseSummoner(String token) throws InputError {
-        Summoner sum = Summoner.named(token).get();
-        if (sum == null || !sum.exists()) {
-            throw new InputError("Summoner named "+token+" wasn't found in current region.\n");
+    private List<Summoner> parseSummoners(String token) throws InputError {
+        var result = new ArrayList<Summoner>();
+        for (var s: token.split(",")) {
+            var summoner = Summoner.named(s).get();
+            if (summoner == null || !summoner.exists()) {
+                throw new InputError("Input didn't match a summoner.\n");
+            } else {
+                System.out.println("hello ");
+                result.add(summoner);
+            }
         }
-        System.out.println("Summoner " + token + " exists.");
-        return sum;
+        return result;
     }
 
     private DateTime parseTime(String s) {

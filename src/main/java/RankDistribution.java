@@ -64,7 +64,7 @@ public class RankDistribution {
 
         for (var summoner: summoners) {
             try {
-                var rs = summoner.getLeaguePosition(Queue.RANKED_SOLO_5x5);
+                var rs = summoner.getLeaguePosition(Queue.RANKED_SOLO);
                 if (rs == null) {
                     buckets.get(0).add(summoner);
                     continue;

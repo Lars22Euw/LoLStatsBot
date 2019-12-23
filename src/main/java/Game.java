@@ -41,4 +41,8 @@ public class Game implements Comparable<Game> {
         var idDif = this.id - o.id;
         return (int) idDif;
     }
+
+    public int compare2(Game o) {
+        return (int) ((this.time.getMillis() - o.time.getMillis())/1000);
+    }
 }
