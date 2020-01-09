@@ -98,6 +98,10 @@ class MyMessage {
         sb.append(stringOf(matches));
     }
 
+    public MyMessage(Manager manager) {
+        this.manager = manager;
+    }
+
     private Queue parseQueue(String token) throws InputError {
         var queue = Queue.valueOf(token.toUpperCase());
         if (queue == null) {
@@ -229,7 +233,7 @@ class MyMessage {
 
     private String asString(Object a) {
         // TODO: verify cast to String
-        return (a +"    ").substring(0, 4);
+        return (a.toString() + "    ").substring(0, 4);
     }
 
     /**
@@ -252,5 +256,15 @@ class MyMessage {
 
     String[] build() {
         return sb.toString().split("\\n");
+    }
+
+    public String[] clash(String input) {
+        System.out.println("pre clash");
+        var summoners = parseSummoners(input);
+        System.out.println("pre do clash");
+        manager.doStuffWithClash(summoners);
+        System.out.println("post clash");
+        var bans = manager.bans;
+        return bans.toArray(new String[0]);
     }
 }

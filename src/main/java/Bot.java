@@ -15,8 +15,28 @@ public class Bot {
     private List<Command> commands = List.of(
             new Command("matches", this::matches),
             new Command("m", this::matches),
+            new Command("c", this::clash),
+            new Command("clash", this::clash),
             new Command("help", this::help),
             new Command("h", this::help));
+
+    private Integer clash(Message message) {
+        var msgText = message.getContent().get();
+        var resp = messageClash(msgText);
+        StringBuilder sb = new StringBuilder();
+        for (var line: resp) {
+            System.out.println("some " + line);
+            sb.append(line).append("\n");
+        }
+        System.out.println(sb.toString());
+        message.getChannel().block().createMessage("```" + "\nBans in order:\n" + sb.toString() + "```").block();
+        return 0;
+    }
+
+    private String[] messageClash(String input) {
+        if (manager == null) System.out.println("manager is null");
+        return new MyMessage(manager).clash(input);
+    }
 
     private Integer matches(Message message) {
         var msgText = message.getContent().get();
@@ -45,7 +65,6 @@ public class Bot {
      Bot(String riotAPI, String discordAPI) {
         manager = new Manager(riotAPI);
         client = new DiscordClientBuilder(discordAPI).build();
-
     }
 
     private String[] message(String input) {

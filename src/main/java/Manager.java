@@ -18,6 +18,7 @@ public class Manager {
     SortedSet<Game> games = new TreeSet<>();
     List<Player> summonersActive = new ArrayList<>();
     List<String> summonersInactive = new ArrayList<>();
+    List<String> bans;
 
     private Manager (String filename, String apiKey) {
         this(apiKey);
@@ -376,9 +377,10 @@ public class Manager {
             clashPlayers.add(new ClashPlayer(s));
         }
 
-
-
-
-        System.out.println(forSummoner(Summoner.named("TheLars22").get()).withStartIndex(0).withEndIndex(100).get().size());
+        bans = new ArrayList<>();
+        bans.add("Ahri");
+        bans.add("Akali");
+        bans.add("Maokai");
+        bans.add("Yasuo");
     }
 }
