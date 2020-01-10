@@ -3,6 +3,7 @@ import com.merakianalytics.orianna.types.common.Queue;
 import com.merakianalytics.orianna.types.common.Region;
 import com.merakianalytics.orianna.types.core.championmastery.ChampionMasteries;
 import com.merakianalytics.orianna.types.core.championmastery.ChampionMastery;
+import com.merakianalytics.orianna.types.core.match.Match;
 import com.merakianalytics.orianna.types.core.staticdata.Champion;
 import com.merakianalytics.orianna.types.core.summoner.Summoner;
 import org.joda.time.DateTime;
@@ -55,18 +56,24 @@ public class Manager {
     }
 
     public static void main(final String[] args) throws InterruptedException {
-        var rd = new RankDistribution(new Manager(args[0]), "gameIds.txt");
+        var m = new Manager(args[0]);
+        System.out.println("testing premades.");
+        var Lars = Summoner.named("TheLars22").get();
+        var p = new Player(Lars, m);
+        var premades = p.getPremades(Lars.matchHistory().withStartIndex(0).withEndIndex(10).get());
 
-        rd.extractPlayers();
+        //var rd = new RankDistribution(new Manager(args[0]), "gameIds.txt");
+
+        //rd.extractPlayers();
         //rd.summoners.add(Summoner.named("TheLars22").get());
         //rd.summoners.add(Summoner.named("TheNonamed").get());
-        rd.sortByRankedGames();
-        rd.printBuckets();
+        //rd.sortByRankedGames();
+        //rd.printBuckets();
 
 
-        for (int a: List.of(0, 5, 9, 10, 11, 29, 30, 31, 71)) {
+        //for (int a: List.of(0, 5, 9, 10, 11, 29, 30, 31, 71)) {
             //System.out.println(a +" "+rd.getBucketIndex(a));
-        }
+        //}
         /*var m = new Manager("names-test.txt", args[0]);
         int totalSummoners = m.summonersActive.size() + m.summonersInactive.size();
         System.out.println("Found "+totalSummoners+" summoners, "+m.summonersInactive.size()+" inactive.");
@@ -90,37 +97,12 @@ public class Manager {
         printAvg(avgGamesDay);*/
     }
 
-    SortedSet<Game> gamesWith(List<Champion> champions, Summoner summoner) {
-        SortedSet<Game> matches = new TreeSet<>(Game::compare2);
-        if (champions == null || champions.size() == 0) {
-            return new Player(summoner, this).matches;
+    static void printAvg(int[] avgDays) {
+        if (avgDays == null) return;
+        for (var a: avgDays) {
+            //if (a == null) continue;
+            System.out.print(a+"\t");
         }
-        for (var champ: champions) {
-            for (var m: forSummoner(summoner).withChampions(champ).get()) {
-                matches.add(new Game(m));
-            }
-        }
-        return matches;
-    }
-
-    static SortedSet<Game> gamesSince(DateTime date, SortedSet<Game> matches) {
-        if (date == null || date.equals(DateTime.now())) return matches;
-        SortedSet<Game> m2 = new TreeSet<>(Game::compare2);
-        for (Game game: matches) {
-            if (game.time.isAfter(date))
-                m2.add(game);
-        }
-        return m2;
-    }
-
-    static  SortedSet<Game> gamesBefore(DateTime date, SortedSet<Game> matches) {
-        if (date == null || date.equals(DateTime.now())) return matches;
-        SortedSet<Game> m2 = new TreeSet<>(Game::compare2);
-        for (Game game: matches) {
-            if (game.time.isBefore(date))
-                m2.add(game);
-        }
-        return m2;
     }
 
     static int[] totalGamesPerDay(SortedSet<Game> matches) {
@@ -133,14 +115,6 @@ public class Manager {
             }
         }
         return avgGpDay;
-    }
-
-    static void printAvg(int[] avgDays) {
-        if (avgDays == null) return;
-        for (var a: avgDays) {
-            //if (a == null) continue;
-            System.out.print(a+"\t");
-        }
     }
 
     static SortedSet<Day> gamesPerDay(SortedSet<Game> matches) {
@@ -327,6 +301,39 @@ public class Manager {
         return result;
     }
 
+    static SortedSet<Game> gamesSince(DateTime date, SortedSet<Game> matches) {
+        if (date == null || date.equals(DateTime.now())) return matches;
+        SortedSet<Game> m2 = new TreeSet<>(Game::compare2);
+        for (Game game: matches) {
+            if (game.time.isAfter(date))
+                m2.add(game);
+        }
+        return m2;
+    }
+
+    static SortedSet<Game> gamesBefore(DateTime date, SortedSet<Game> matches) {
+        if (date == null || date.equals(DateTime.now())) return matches;
+        SortedSet<Game> m2 = new TreeSet<>(Game::compare2);
+        for (Game game: matches) {
+            if (game.time.isBefore(date))
+                m2.add(game);
+        }
+        return m2;
+    }
+
+    SortedSet<Game> gamesWith(List<Champion> champions, Summoner summoner) {
+        SortedSet<Game> matches = new TreeSet<>(Game::compare2);
+        if (champions == null || champions.size() == 0) {
+            return new Player(summoner, this).matches;
+        }
+        for (var champ: champions) {
+            for (var m: forSummoner(summoner).withChampions(champ).get()) {
+                matches.add(new Game(m));
+            }
+        }
+        return matches;
+    }
+
     public SortedSet<Game> gamesWith(List<Summoner> summoners, List<Champion> champions, List<Queue> queues, DateTime startDate, DateTime endDate) {
         SortedSet<Game> result = new TreeSet<>(Game::compare2);
 
@@ -377,10 +384,13 @@ public class Manager {
             clashPlayers.add(new ClashPlayer(s));
         }
 
+
+
         bans = new ArrayList<>();
         bans.add("Ahri");
         bans.add("Akali");
         bans.add("Maokai");
         bans.add("Yasuo");
     }
+
 }

@@ -4,6 +4,8 @@ import com.merakianalytics.orianna.types.core.summoner.Summoner;
 import org.joda.time.DateTime;
 
 import java.io.*;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
@@ -19,7 +21,7 @@ public class Player {
     private static final String folder = "summoners\\";
 
     public Player() {
-
+        System.out.println("empty constructor called.");
     }
 
     public Player(Summoner sum, Manager manager) {
@@ -92,6 +94,38 @@ public class Player {
 
     }
 
+    List<Summoner> getPremades(List<Match> games) {
+        List result = new ArrayList<Summoner>();
+        List allSumoners = new ArrayList<Summoner>();
 
+        if (games == null || games.size() == 0)
+            return result;
 
+        System.out.println("Input: "+games.size()+" games.");
+
+        if (summoner == null || !summoner.exists()) {
+            System.out.println("Summoner was null or not found.");
+            return result;
+        }
+
+        System.out.println("Checking premades for: "+name);
+
+        for (var game: games) {
+            Summoner[] players = game.getBlueTeam().getParticipants().contains(summoner)
+                    ? game.getBlueTeam().getParticipants().stream().map(s -> s.getSummoner()).toArray(Summoner[]::new)
+                    : game.getRedTeam().getParticipants().stream().map(s -> s.getSummoner()).toArray(Summoner[]::new);
+            //var players = game.getParticipants();
+            for (var player: players) {
+                if (allSumoners.contains(player) && !result.contains(player)) {
+                    result.add(player);
+                    System.out.println("Added "+player.getName());
+                }
+            }
+            allSumoners.addAll(List.of(players));
+        }
+
+        System.out.println("Found "+ result.size()+ "hits out of "+allSumoners.size()+" players.");
+
+        return result;
+    }
 }
