@@ -1,7 +1,12 @@
+import com.merakianalytics.orianna.types.common.Lane;
 import com.merakianalytics.orianna.types.core.championmastery.ChampionMasteries;
 import com.merakianalytics.orianna.types.core.championmastery.ChampionMastery;
+import com.merakianalytics.orianna.types.core.match.Match;
+import com.merakianalytics.orianna.types.core.match.Participant;
 import com.merakianalytics.orianna.types.core.staticdata.Champion;
+import com.merakianalytics.orianna.types.core.staticdata.Champions;
 import com.merakianalytics.orianna.types.core.summoner.Summoner;
+import org.joda.time.DateTime;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -9,66 +14,90 @@ import java.util.stream.Collectors;
 import static com.merakianalytics.orianna.types.core.match.MatchHistory.forSummoner;
 
 public class ClashPlayer extends Player {
-    private final int totalMastery;
-    private final List<Double> relativeMastery;
-    private final List<ChampionMastery> masteries;
-    private final List<Double> bans;
-
-    public static void main(String[] args) {
-        var m = new Manager(args[0]);
-        var sum = Summoner.named("h4ckbraten").get();
-        //assert(sum.exists());
-        var result = new ClashPlayer(sum);
-        result.getBans(10).forEach(c -> System.out.println(c.getName()));
-    }
+    private int totalMastery;
+    private List<Double> relativeMastery;
+    private List<ChampionMastery> masteries;
+    /**
+     * champions scored by masteryscore.
+     * "Erfahrung"
+     */
+    List<ClashBan> masteryScores;
+    /**
+     * champions scored by recent playrate
+     */
+    Map<Lane, Map<Champion, Double>> recentScores;
+    private final DateTime now;
 
     public ClashPlayer(Summoner sum, Manager manager) {
         super(sum, manager);
         this.totalMastery = 0;
         relativeMastery = null;
         masteries = null;
-        bans = null;
+        masteryScores = null;
+        now = null;
     }
 
     public ClashPlayer(Summoner sum) {
         super();
+        super.summoner = sum;
+        now = DateTime.now();
+        setMasteryScores(sum);
+        setRecentScores(sum);
+    }
+
+    private void setMasteryScores(Summoner sum) {
         this.masteries = new ArrayList<>(ChampionMasteries.forSummoner(sum).get());
         this.totalMastery = masteries.stream().mapToInt(ChampionMastery::getPoints).sum();
-        this.matches = new TreeSet<>(Game::compare2);
-        for (var m : forSummoner(sum).withStartIndex(0).withEndIndex(100).get()) {
-            matches.add(new Game(m));
-        }
+
         this.relativeMastery = masteries.stream().map(cm -> ((double) cm.getPoints())/totalMastery).collect(Collectors.toList());
 
         final var scale = 0.5;
-        this.bans = new ArrayList<>();
+        this.masteryScores = new ArrayList<>();
         for (int i = 0; i < masteries.size(); i++) {
             var score = Math.log(masteries.get(i).getPoints()) * scale + relativeMastery.get(i) * (1 - scale);
-            bans.add(score);
+            masteryScores.add(new ClashBan( masteries.get(i).getChampion(), score));
         }
     }
 
-    public List<Champion> getBans(int amount) {
-        var result = new ArrayList<Integer>();
-        var idx = 0;
-        var worstScore = Double.MAX_VALUE;
-        for (int i = 0; i < masteries.size(); i++) {
-            if (result.size() < amount) {
-                result.add(i);
-            }
-            if (worstScore < bans.get(i)) {
-                result.set(idx, i);
-            }
-            worstScore = Double.MAX_VALUE;
-            for (int j = 0; j < result.size(); j++) {
-                var score = bans.get(result.get(j));
-                if (score < worstScore) {
-                    worstScore = score;
-                    idx = j;
-                }
-            }
+    private void setRecentScores(Summoner sum) {
+        this.matches = new TreeSet<>(Game::compare2);
+        for (var m : forSummoner(sum).withStartIndex(0).withEndIndex(1000).get()) {
+            matches.add(new Game(m));
         }
-        return result.stream().map(i -> masteries.get(i).getChampion()).collect(Collectors.toList());
+
+        recentScores = new HashMap<>();
+        for (var lane: Lane.values()) {
+            var bans = new HashMap<Champion, Double>();
+            for (var champ: Champions.get()) {
+                bans.put(champ, 0.0);
+            }
+            recentScores.put(lane, bans);
+        }
+
+        for (var game: matches) {
+            //updateRecentScore(game, 1);
+        }
+        // TODO: handle lane "NONE"
+
+    }
+
+    public void updateRecentScore(Game game, double factor) {
+        var participant = game.match.getParticipants().find(p -> p.getSummoner().equals(summoner));
+        if (participant == null) {
+            System.out.println("Error in retrieving participant");
+            return;
+        }
+        var champ = participant.getChampion();
+        var old = recentScores.get(participant.getLane()).get(champ);
+        recentScores.get(participant.getLane()).replace(champ, old + function(game)*factor);
+    }
+
+    private Double function(Game game) {
+        var difDays = now.minus(game.time.getMillis()).getMillis()/ 3600000 / 24;
+        var b = Math.log(0.8)/30;
+        var x = Math.exp( b * difDays);
+        //System.out.println(b+ " " + x);
+        return x;
     }
 
 }

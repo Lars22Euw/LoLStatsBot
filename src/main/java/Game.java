@@ -5,6 +5,7 @@ public class Game implements Comparable<Game> {
     public long id;
     DateTime time;
     String queue;
+    Match match;
 
     public Game(Match match) {
         if (match == null) {
@@ -12,6 +13,7 @@ public class Game implements Comparable<Game> {
             time = null;
             queue = "";
         }
+        this.match = match;
         this.id = match.getId();
         this.time = match.getCreationTime();
         if (match.getQueue() != null)

@@ -14,7 +14,7 @@ import java.util.TreeSet;
  *  and all recorded games for that player.
  */
 public class Player {
-    private Summoner summoner = null;
+    Summoner summoner = null;
     String name;
     public SortedSet<Game> matches = new TreeSet<>(Game::compare2);
 
@@ -101,6 +101,11 @@ public class Player {
         if (games == null || games.size() == 0)
             return result;
 
+        if (games.size() == 1) {
+            System.out.println("Cannot detect premades from one match alone.");
+            return result;
+        }
+
         System.out.println("Input: "+games.size()+" games.");
 
         if (summoner == null || !summoner.exists()) {
@@ -111,6 +116,7 @@ public class Player {
         System.out.println("Checking premades for: "+name);
 
         for (var game: games) {
+            //game.getBlueTeam().getParticipants().get(0).
             Summoner[] players = game.getBlueTeam().getParticipants().contains(summoner)
                     ? game.getBlueTeam().getParticipants().stream().map(s -> s.getSummoner()).toArray(Summoner[]::new)
                     : game.getRedTeam().getParticipants().stream().map(s -> s.getSummoner()).toArray(Summoner[]::new);
@@ -120,12 +126,14 @@ public class Player {
                     result.add(player);
                     System.out.println("Added "+player.getName());
                 }
+                if (!allSumoners.contains(player)) allSumoners.add(player);
             }
-            allSumoners.addAll(List.of(players));
         }
 
-        System.out.println("Found "+ result.size()+ "hits out of "+allSumoners.size()+" players.");
+        System.out.println("Found "+ result.size()+ " hits out of "+allSumoners.size()+" players.");
 
         return result;
     }
+
+
 }
