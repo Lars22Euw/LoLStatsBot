@@ -1,4 +1,3 @@
-import com.merakianalytics.orianna.types.core.match.Match;
 import com.merakianalytics.orianna.types.core.summoner.Summoner;
 
 import java.util.ArrayList;
@@ -22,7 +21,7 @@ public class ClashTeam {
         var sum2 = Summoner.named("TheLars22").get();
         var lars = new ClashPlayer(sum2);
         var team = new ClashTeam(List.of(thomas, lars),"UoH");
-
+        team.somethingWithPremades();
     }
 
     void somethingWithPremades() {
@@ -40,6 +39,7 @@ public class ClashTeam {
                         p.updateRecentScore(pGame, 1);
                     }
                 }
+                p.normalizeRecent();
             }
         }
     }

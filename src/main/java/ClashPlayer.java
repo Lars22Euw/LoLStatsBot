@@ -61,7 +61,13 @@ public class ClashPlayer extends Player {
 
     private void setRecentScores(Summoner sum) {
         this.matches = new TreeSet<>(Game::compare2);
-        for (var m : forSummoner(sum).withStartIndex(0).withEndIndex(1000).get()) {
+        // TODO: Handle NONE
+        for (var m : forSummoner(sum).withStartIndex(0).withEndIndex(500).withQueues(
+                com.merakianalytics.orianna.types.common.Queue.RANKED_SOLO,
+                com.merakianalytics.orianna.types.common.Queue.BLIND_PICK,
+                com.merakianalytics.orianna.types.common.Queue.NORMAL,
+                com.merakianalytics.orianna.types.common.Queue.CLASH).get()
+                .filter(m -> !m.getParticipants().find(p -> p.getSummoner().equals(sum)).getLane().equals(Lane.NONE))) {
             matches.add(new Game(m));
         }
 
@@ -73,12 +79,6 @@ public class ClashPlayer extends Player {
             }
             recentScores.put(lane, bans);
         }
-
-        for (var game: matches) {
-            //updateRecentScore(game, 1);
-        }
-        // TODO: handle lane "NONE"
-
     }
 
     public void updateRecentScore(Game game, double factor) {
@@ -88,6 +88,7 @@ public class ClashPlayer extends Player {
             return;
         }
         var champ = participant.getChampion();
+        System.out.println(participant.getLane().toString() + " with " + participant.getChampion().getName());
         var old = recentScores.get(participant.getLane()).get(champ);
         recentScores.get(participant.getLane()).replace(champ, old + function(game)*factor);
     }
@@ -96,8 +97,21 @@ public class ClashPlayer extends Player {
         var difDays = now.minus(game.time.getMillis()).getMillis()/ 3600000 / 24;
         var b = Math.log(0.8)/30;
         var x = Math.exp( b * difDays);
-        //System.out.println(b+ " " + x);
+        if (game.match.getQueue().equals(com.merakianalytics.orianna.types.common.Queue.RANKED_SOLO) ||
+           game.match.getQueue().equals(com.merakianalytics.orianna.types.common.Queue.RANKED_FLEX)) {
+            return 2 * x;
+        }
+        if (game.match.getQueue().equals(com.merakianalytics.orianna.types.common.Queue.CLASH)) {
+            return 4 * x;
+        }
         return x;
     }
 
+    public void normalizeRecent() {
+        recentScores.forEach((l, champs) -> {
+            for (var c : champs.keySet()) {
+                champs.replace(c, champs.get(c).doubleValue() / matches.size());
+            }
+        });
+    }
 }
