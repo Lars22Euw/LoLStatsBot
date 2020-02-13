@@ -8,11 +8,7 @@ public class Game implements Comparable<Game> {
     Match match;
 
     public Game(Match match) {
-        if (match == null) {
-            id = 0;
-            time = null;
-            queue = "";
-        }
+        assert match != null;
         this.match = match;
         this.id = match.getId();
         this.time = match.getCreationTime();
@@ -22,8 +18,10 @@ public class Game implements Comparable<Game> {
 
     public Game(String line) {
         var tmp = line.split(", ");
-        if (tmp == null || tmp.length == 0)
-            new Game((Match) null);
+        if (tmp.length == 0) {
+            System.out.println("Some error with game");
+            return;
+        }
         try {
             this.id = Long.parseLong(tmp[0]);
             this.time = new DateTime(tmp[1]);

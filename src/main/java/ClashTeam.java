@@ -15,7 +15,7 @@ public class ClashTeam {
     }
 
     public static void main(String[] args) {
-        var m = new Manager(args[0]);
+        new Manager(args[0]);
         var sum = Summoner.named("TheNonamed").get();
         var thomas = new ClashPlayer(sum);
         var sum2 = Summoner.named("TheLars22").get();

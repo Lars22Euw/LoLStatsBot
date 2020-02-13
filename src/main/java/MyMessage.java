@@ -12,15 +12,16 @@ import java.util.SortedSet;
  */
 class MyMessage {
 
+    // TODO: time is displayed wrong.
+    public static final String DATE_PATTERN = "EE ee. MM. yyyy";
     private Manager manager;
     private StringBuilder sb = new StringBuilder();
-    private DateTime startDate = DateTime.now(), endDate = DateTime.now();
     private static final int MONTHS_IN_THE_PAST = 3;
 
-    MyMessage(String input, Manager manager) {
+    MyMessage(String command_input, Manager manager) {
         this.manager = manager;
 
-        var tokens = input.trim().split(" ");
+        var tokens = command_input.trim().split(" ");
         if (tokens.length < 2) {
             sb.append("Expected at least one summoner name.\n");
             return;
@@ -39,6 +40,7 @@ class MyMessage {
             return;
         }
 
+        DateTime startDate = DateTime.now();
         for (int index = 2; index < tokens.length; index++) {
             try {
                 switch (tokens[index]) {
@@ -70,7 +72,7 @@ class MyMessage {
                     case "-q": { // with QUEUE
                         index++;
                         if (index >= tokens.length) break;
-                        queues.add(parseQueue(tokens[index]));
+                        queues.addAll(parseQueues(tokens[index]));
                         break;
                     }
                 }
@@ -82,12 +84,12 @@ class MyMessage {
         }
 
         if (startDate == null || !startTimeSet)
-            startDate = setStartDate(MONTHS_IN_THE_PAST, 1);
+            startDate = getDateMinus(MONTHS_IN_THE_PAST, 1);
 
-        // TODO: time is displayed wrong.
+        DateTime endDate = DateTime.now();
         System.out.println("Args: sums champs queues "+summoners.size()+" "+champions.size()+" "+queues.size()+
-                "\nStart: "+startDate.toString("EE ee. MM. yyyy")+
-                "\nEnd:   "+endDate.toString("EE ee. MM. yyyy"));
+                "\nStart: "+ startDate.toString(DATE_PATTERN)+
+                "\nEnd:   "+ endDate.toString(DATE_PATTERN));
 
         SortedSet<Game> matches = manager.gamesWith(summoners, champions, queues, startDate, endDate);
         if (matches == null || matches.size() == 0) {
@@ -102,13 +104,18 @@ class MyMessage {
         this.manager = manager;
     }
 
-    private Queue parseQueue(String token) throws InputError {
-        var queue = Queue.valueOf(token.toUpperCase());
-        if (queue == null) {
-            throw new InputError("Input did not match queuetype.\n");
+    private List<Queue> parseQueues(String token) throws InputError {
+        var result = new ArrayList<Queue>();
+        for (var q: token.split(",")) {
+            try {
+                var queue = Queue.valueOf(q.toUpperCase());
+                System.out.println("Parsed Queue "+ queue.name());
+                result.add(queue);
+            } catch (IllegalArgumentException e) {
+                throw new InputError("Input did not match queuetypes.\n");
+            }
         }
-        System.out.println("Queue input was "+ queue.name());
-        return queue;
+        return result;
     }
 
     private List<Champion> parseChamps(String token) throws InputError {
@@ -119,7 +126,7 @@ class MyMessage {
             if (champion == null || !champion.exists()) {
                 throw new InputError("Input didn't match a champion.\n");
             } else {
-                System.out.println("hello "+c);
+                System.out.println("Parsed "+c);
                 result.add(champion);
             }
         }
@@ -134,7 +141,7 @@ class MyMessage {
             if (summoner == null || !summoner.exists()) {
                 throw new InputError("Input didn't match a summoner.\n");
             } else {
-                System.out.println("hello ");
+                System.out.println("Parsed "+s);
                 result.add(summoner);
             }
         }
@@ -143,28 +150,33 @@ class MyMessage {
 
     private DateTime parseTime(String s) {
         if (s.endsWith("m")) {
+            DateTime date;
             try {
-                return setStartDate(Integer.parseInt(s.substring(0, s.length()-1)), 6);
+                String sub = s.substring(0, s.length()-1);
+                date = getDateMinus(Integer.parseInt(sub), 6);
+                System.out.println("Parsed "+sub);
+                return date;
             } catch (Exception e) {
                 e.printStackTrace();
-                throw new InputError("Number expected.\n");
+                throw new InputError("Input was not a number.\n");
             }
         }
         return null;
     }
 
     /**
-     * Takes a monthDelta as input, and sets Date to the time deltaMonths in the past.
-     * @param monthDelta
+     * Returns the date from now - monthDelta with weekday = day
+     * @param monthDelta how much months in the past the time should be.
+     * @param day day of week the date is set to
+     * @return Date.now() - monthDelta and weekday = day
      */
-    private DateTime setStartDate(int monthDelta, int day) {
+    private DateTime getDateMinus(int monthDelta, int day) {
         var time = DateTime.now();
         time = time.withMonthOfYear(time.getMonthOfYear() - monthDelta);
-        time = time.withDayOfWeek(day);
-        return time;
+        return time.withDayOfWeek(day);
     }
 
-    private DateTime getFirstMonday(Day[] week) {
+    private DateTime getMonday(Day[] week) {
         DateTime result = DateTime.now();
         for (Day d: week) {
             if (d == null || d.matches == null || d.matches.size() == 0)
@@ -175,7 +187,7 @@ class MyMessage {
     }
 
     private String weeksToString(List<Day[]> weeks) {
-        var days = List.of("Mo", "Tu", "We", "Th", "Fr", "Sa", "Su");
+        final var days = List.of("Mo", "Tu", "We", "Th", "Fr", "Sa", "Su");
         var sbInfo = new StringBuilder();
         var sbSum = new StringBuilder();
         var dailySBs = new ArrayList<StringBuilder>();
@@ -186,13 +198,17 @@ class MyMessage {
 
         sbInfo.append("KW: ");
         sbSum.append("Sum ");
-        var time = getFirstMonday(weeks.get(0));
+        var time = getMonday(weeks.get(0));
 
 
         for (var week: weeks) {
             if (week == null) {
-                //sb.append("Empty week");
                 // TODO: add empty collum to each sb
+                for (var sb: dailySBs) {
+                    sb.append(asString());
+                }
+                sbInfo.append(asString());
+                sbSum.append(asString());
                 continue;
             }
             int c = 0;
@@ -200,12 +216,12 @@ class MyMessage {
                 var day = week[i];
 
                 if (day == null) {
-                    dailySBs.get(i).append(asString("    "));
+                    dailySBs.get(i).append(asString());
                     continue;
                 }
                 int tmp = day.matches.size();
                 if (tmp == 0) {
-                    dailySBs.get(i).append(asString("   "));
+                    dailySBs.get(i).append(asString());
                 } else {
                     dailySBs.get(i).append(asString(tmp));
                 }
@@ -215,6 +231,7 @@ class MyMessage {
                 // TODO: test kw display
                 //time = week[0].matches.get(0).time;
                 //"KW " +
+                //time.toString(DATE_PATTERN);
                 String date = time.getWeekOfWeekyear() + " "; //+ time.yearOfCentury().get();
                 sbInfo.append(asString(date));
                 sbSum.append(asString(c));
@@ -231,9 +248,15 @@ class MyMessage {
         return result.toString();
     }
 
+    private String asString() {
+        return asString("");
+    }
+
     private String asString(Object a) {
+        final int size = 4;
+        if (a == null) a = "";
         // TODO: verify cast to String
-        return (a.toString() + "    ").substring(0, 4);
+        return (a.toString() + "    ").substring(0, size);
     }
 
     /**

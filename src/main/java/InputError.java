@@ -1,5 +1,3 @@
-import java.sql.SQLOutput;
-
 public class InputError extends Error {
 
     String error;
