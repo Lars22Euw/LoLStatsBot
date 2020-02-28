@@ -368,7 +368,7 @@ public class Manager {
         SortedSet<Game> gamesTogether = new TreeSet();
         System.out.println("Games together:"+ids.size());
 
-        ids.forEach(System.out::println);
+        //ids.forEach(System.out::println);
 
         for (var game: gamesWith(champions, summoners.remove(0))) {
             if(ids.contains(game.id)) {

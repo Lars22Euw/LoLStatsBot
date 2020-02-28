@@ -3,6 +3,7 @@ import com.merakianalytics.orianna.types.core.staticdata.Champion;
 import com.merakianalytics.orianna.types.core.summoner.Summoner;
 import org.joda.time.DateTime;
 
+import java.sql.SQLOutput;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.SortedSet;
@@ -83,8 +84,10 @@ class MyMessage {
             }
         }
 
-        if (startDate == null || !startTimeSet)
+        if (startDate == null || !startTimeSet) {
             startDate = getDateMinus(MONTHS_IN_THE_PAST, 1);
+        }
+
 
         DateTime endDate = DateTime.now();
         System.out.println("Args: sums champs queues "+summoners.size()+" "+champions.size()+" "+queues.size()+
@@ -145,6 +148,7 @@ class MyMessage {
                 result.add(summoner);
             }
         }
+        System.out.println("end of sum");
         return result;
     }
 
@@ -172,8 +176,13 @@ class MyMessage {
      */
     private DateTime getDateMinus(int monthDelta, int day) {
         var time = DateTime.now();
-        time = time.withMonthOfYear(time.getMonthOfYear() - monthDelta);
-        return time.withDayOfWeek(day);
+        int x = time.getMonthOfYear() - monthDelta;
+        if (x < 0) {
+            time = time.withYear(time.getYear()-1);
+        }
+        var index = (x + 12) % 12 + 1;
+        var time2 = time.withMonthOfYear(index);
+        return time2.withDayOfWeek(day);
     }
 
     private DateTime getMonday(Day[] week) {

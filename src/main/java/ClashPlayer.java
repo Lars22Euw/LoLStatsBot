@@ -14,6 +14,7 @@ import java.util.stream.Collectors;
 import static com.merakianalytics.orianna.types.core.match.MatchHistory.forSummoner;
 
 public class ClashPlayer extends Player {
+    public static final int MASTERY_LOWER_CUTOFF = 12000;
     private int totalMastery;
     private List<Double> relativeMastery;
     private List<ChampionMastery> masteries;
@@ -54,6 +55,7 @@ public class ClashPlayer extends Player {
         final var scale = 0.5;
         this.masteryScores = new ArrayList<>();
         for (int i = 0; i < masteries.size(); i++) {
+            if (masteries.get(i).getPoints() < MASTERY_LOWER_CUTOFF) continue;
             var score = Math.log(masteries.get(i).getPoints()) * scale + relativeMastery.get(i) * (1 - scale);
             masteryScores.add(new ClashBan( masteries.get(i).getChampion(), score));
         }
@@ -88,7 +90,7 @@ public class ClashPlayer extends Player {
             return;
         }
         var champ = participant.getChampion();
-        System.out.println(participant.getLane().toString() + " with " + participant.getChampion().getName());
+        //System.out.println(participant.getLane().toString() + " with " + participant.getChampion().getName());
         var old = recentScores.get(participant.getLane()).get(champ);
         recentScores.get(participant.getLane()).replace(champ, old + function(game)*factor);
     }
