@@ -140,6 +140,7 @@ class MyMessage {
     private List<Summoner> parseSummoners(String token) throws InputError {
         var result = new ArrayList<Summoner>();
         for (var s: token.split(",")) {
+            System.out.println("Summoner" + s);
             var summoner = Summoner.named(s).get();
             if (summoner == null || !summoner.exists()) {
                 throw new InputError("Input didn't match a summoner.\n");
@@ -292,11 +293,8 @@ class MyMessage {
 
     public String[] clash(String input) {
         System.out.println("pre clash");
-        var summoners = parseSummoners(input);
+        var summoners = parseSummoners(input.split(" ")[1]);
         System.out.println("pre do clash");
-        manager.doStuffWithClash(summoners);
-        System.out.println("post clash");
-        var bans = manager.bans;
-        return bans.toArray(new String[0]);
+        return manager.doStuffWithClash(summoners);
     }
 }

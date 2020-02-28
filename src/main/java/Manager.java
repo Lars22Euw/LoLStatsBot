@@ -1,9 +1,6 @@
 import com.merakianalytics.orianna.Orianna;
 import com.merakianalytics.orianna.types.common.Queue;
 import com.merakianalytics.orianna.types.common.Region;
-import com.merakianalytics.orianna.types.core.championmastery.ChampionMasteries;
-import com.merakianalytics.orianna.types.core.championmastery.ChampionMastery;
-import com.merakianalytics.orianna.types.core.match.Match;
 import com.merakianalytics.orianna.types.core.staticdata.Champion;
 import com.merakianalytics.orianna.types.core.summoner.Summoner;
 import org.joda.time.DateTime;
@@ -378,19 +375,13 @@ public class Manager {
         return gamesWithPlayers(summoners, champions, gamesTogether);
     }
 
-    public void doStuffWithClash(List<Summoner> summoners) {
+    public String[] doStuffWithClash(List<Summoner> summoners) {
         var clashPlayers = new ArrayList<ClashPlayer>();
         for (var s : summoners) {
             clashPlayers.add(new ClashPlayer(s));
         }
-
-
-
-        bans = new ArrayList<>();
-        bans.add("Ahri");
-        bans.add("Akali");
-        bans.add("Maokai");
-        bans.add("Yasuo");
+        var clashTeam = new ClashTeam(clashPlayers, "FPX");
+        return clashTeam.bans();
     }
 
 }

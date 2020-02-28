@@ -58,7 +58,9 @@ public class Bot {
 
     private Integer help(Message message) {
         message.getChannel().block().createMessage("You can message this bot directly.\n" +
-                "`.matches` will list matches per day for a given user.").block();
+                "`.help` will display this very help message.\n" +
+                "`.matches` will list matches per day for a given user.\n" +
+                "`.clash` will return suitable bans against a list of players.").block();
         return 0;
     }
 

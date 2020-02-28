@@ -15,6 +15,7 @@ import static com.merakianalytics.orianna.types.core.match.MatchHistory.forSummo
 
 public class ClashPlayer extends Player {
     public static final int MASTERY_LOWER_CUTOFF = 12000;
+    private static final Double RECENTLY_SCALING = 170.0;
     private int totalMastery;
     private List<Double> relativeMastery;
     private List<ChampionMastery> masteries;
@@ -26,7 +27,8 @@ public class ClashPlayer extends Player {
     /**
      * champions scored by recent playrate
      */
-    Map<Lane, Map<Champion, Double>> recentScores;
+    //Map<Lane, Map<Champion, Double>> recentScores;
+    List<ClashBan> recentScores;
     private final DateTime now;
 
     public ClashPlayer(Summoner sum, Manager manager) {
@@ -41,6 +43,7 @@ public class ClashPlayer extends Player {
     public ClashPlayer(Summoner sum) {
         super();
         super.summoner = sum;
+        super.name = sum.getName();
         now = DateTime.now();
         setMasteryScores(sum);
         setRecentScores(sum);
@@ -49,16 +52,21 @@ public class ClashPlayer extends Player {
     private void setMasteryScores(Summoner sum) {
         this.masteries = new ArrayList<>(ChampionMasteries.forSummoner(sum).get());
         this.totalMastery = masteries.stream().mapToInt(ChampionMastery::getPoints).sum();
-
         this.relativeMastery = masteries.stream().map(cm -> ((double) cm.getPoints())/totalMastery).collect(Collectors.toList());
-
-        final var scale = 0.5;
+        final var scale = 0.3;
         this.masteryScores = new ArrayList<>();
         for (int i = 0; i < masteries.size(); i++) {
             if (masteries.get(i).getPoints() < MASTERY_LOWER_CUTOFF) continue;
-            var score = Math.log(masteries.get(i).getPoints()) * scale + relativeMastery.get(i) * (1 - scale);
-            masteryScores.add(new ClashBan( masteries.get(i).getChampion(), score));
+            var score = Math.log(masteries.get(i).getPoints() - 12000) * scale + relativeMastery.get(i) * (1 - scale) * 10;
+            masteryScores.add(new ClashBan(masteries.get(i).getChampion(), score,
+                    makeReason(masteries.get(i).getPoints(),
+                               masteries.get(i).getChampion(),
+                              "high mastery score")));
         }
+    }
+
+    private String makeReason(double displayValue, Champion champion, String message) {
+        return name + ": " + message + " (" + (int) displayValue + ")";
     }
 
     private void setRecentScores(Summoner sum) {
@@ -73,14 +81,7 @@ public class ClashPlayer extends Player {
             matches.add(new Game(m));
         }
 
-        recentScores = new HashMap<>();
-        for (var lane: Lane.values()) {
-            var bans = new HashMap<Champion, Double>();
-            for (var champ: Champions.get()) {
-                bans.put(champ, 0.0);
-            }
-            recentScores.put(lane, bans);
-        }
+        recentScores = ClashBan.prepareClashBanList();
     }
 
     public void updateRecentScore(Game game, double factor) {
@@ -90,15 +91,14 @@ public class ClashPlayer extends Player {
             return;
         }
         var champ = participant.getChampion();
-        //System.out.println(participant.getLane().toString() + " with " + participant.getChampion().getName());
-        var old = recentScores.get(participant.getLane()).get(champ);
-        recentScores.get(participant.getLane()).replace(champ, old + function(game)*factor);
+        ClashBan.add(recentScores, new ClashBan(champ,function(game) * factor));
     }
+
 
     private Double function(Game game) {
         var difDays = now.minus(game.time.getMillis()).getMillis()/ 3600000 / 24;
         var b = Math.log(0.8)/30;
-        var x = Math.exp( b * difDays);
+        var x = Math.exp(b * difDays);
         if (game.match.getQueue().equals(com.merakianalytics.orianna.types.common.Queue.RANKED_SOLO) ||
            game.match.getQueue().equals(com.merakianalytics.orianna.types.common.Queue.RANKED_FLEX)) {
             return 2 * x;
@@ -110,10 +110,8 @@ public class ClashPlayer extends Player {
     }
 
     public void normalizeRecent() {
-        recentScores.forEach((l, champs) -> {
-            for (var c : champs.keySet()) {
-                champs.replace(c, champs.get(c).doubleValue() / matches.size());
-            }
-        });
+        recentScores.forEach(clashBan -> clashBan.score *= RECENTLY_SCALING / matches.size());
+        recentScores.forEach(clashBan -> clashBan.reasons.add(new Reason(name + ": many recent games ("
+                + (int) (clashBan.score * 1.5 + 1) + ")", clashBan.score)));
     }
 }
