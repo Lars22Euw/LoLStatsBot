@@ -25,7 +25,7 @@ public class Bot {
         var resp = messageClash(msgText);
         StringBuilder sb = new StringBuilder();
         for (var line: resp) {
-            System.out.println("some " + line);
+            //System.out.println("some " + line);
             sb.append(line).append("\n");
         }
         System.out.println(sb.toString());

@@ -66,8 +66,11 @@ public class ClashPlayer extends Player {
     }
 
     private String makeReason(double displayValue, Champion champion, String message) {
-        displayValue %= 100;
-        return name + ": " + message + " (" + (int) displayValue + "k)";
+        displayValue /= 1000;
+        String result = name + ": " + message + " (" + (int) displayValue;
+        if (displayValue / 1000 > 0) result += "m)";
+        else result += "k)";
+        return  result;
     }
 
     private void setRecentScores(Summoner sum) {
