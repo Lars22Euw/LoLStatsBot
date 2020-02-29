@@ -3,7 +3,6 @@ import com.merakianalytics.orianna.types.core.staticdata.Champion;
 import com.merakianalytics.orianna.types.core.summoner.Summoner;
 import org.joda.time.DateTime;
 
-import java.sql.SQLOutput;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.SortedSet;
@@ -233,7 +232,7 @@ class MyMessage {
                 if (tmp == 0) {
                     dailySBs.get(i).append(asString());
                 } else {
-                    dailySBs.get(i).append(asString(tmp));
+                    dailySBs.get(i).append(asString(tmp, 4));
                 }
                 c += tmp;
             }
@@ -243,8 +242,8 @@ class MyMessage {
                 //"KW " +
                 //time.toString(DATE_PATTERN);
                 String date = time.getWeekOfWeekyear() + " "; //+ time.yearOfCentury().get();
-                sbInfo.append(asString(date));
-                sbSum.append(asString(c));
+                sbInfo.append(asString(date, 4));
+                sbSum.append(asString(c, 4));
                 time = time.plusWeeks(1);
             } catch (Exception e) {
                 sbInfo.append(c);
@@ -259,14 +258,16 @@ class MyMessage {
     }
 
     private String asString() {
-        return asString("");
+        return asString("", 4);
     }
 
-    private String asString(Object a) {
-        final int size = 4;
+    public static String asString(Object a, final int size) {
         if (a == null) a = "";
-        // TODO: verify cast to String
-        return (a.toString() + "    ").substring(0, size);
+        String result = a.toString();
+        while (result.length() < size) {
+            result += " ";
+        }
+        return result.substring(0, size);
     }
 
     /**
@@ -281,7 +282,7 @@ class MyMessage {
 
         var avg = Manager.totalGamesPerDay(games);
         for (var a: avg) {
-            sb.append(asString(a));
+            sb.append(asString(a, 4));
         }
         sb.append("\n");
         return sb.toString();

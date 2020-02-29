@@ -61,12 +61,13 @@ public class ClashPlayer extends Player {
             masteryScores.add(new ClashBan(masteries.get(i).getChampion(), score,
                     makeReason(masteries.get(i).getPoints(),
                                masteries.get(i).getChampion(),
-                              "high mastery score")));
+                              "mastery")));
         }
     }
 
     private String makeReason(double displayValue, Champion champion, String message) {
-        return name + ": " + message + " (" + (int) displayValue + ")";
+        displayValue %= 100;
+        return name + ": " + message + " (" + (int) displayValue + "k)";
     }
 
     private void setRecentScores(Summoner sum) {
@@ -111,7 +112,7 @@ public class ClashPlayer extends Player {
 
     public void normalizeRecent() {
         recentScores.forEach(clashBan -> clashBan.score *= RECENTLY_SCALING / matches.size());
-        recentScores.forEach(clashBan -> clashBan.reasons.add(new Reason(name + ": many recent games ("
-                + (int) (clashBan.score * 1.5 + 1) + ")", clashBan.score)));
+        recentScores.forEach(clashBan -> clashBan.reasons.add(new Reason(name + ": "+(int) (clashBan.score * 1.5 + 1)
+                +" recency", clashBan.score)));
     }
 }

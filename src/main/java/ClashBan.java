@@ -8,6 +8,7 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 public class ClashBan implements Comparable<ClashBan> {
+    public static final int MAX_REASONS = 3;
     Champion champion;
     double score;
     List<Reason> reasons = new ArrayList<>();
@@ -40,11 +41,20 @@ public class ClashBan implements Comparable<ClashBan> {
         findClashban(scores, cb2.champion).add(cb2);
     }
 
-
     @Override
     public String toString() {
-        return champion.getName() +
-                "\t" + reasons.toString();
+        String champ = MyMessage.asString(champion.getName(), 16);
+        StringBuilder sb = new StringBuilder();
+        sb.append("[");
+
+        for (int i = 0; i < reasons.size(); i++) {
+            String a = reasons.get(i).toString();
+            if (i+1 < reasons.size()) a += ", ";
+            var message = MyMessage.asString(a, Reason.longestReason);
+            sb.append(message);
+        }
+        sb.append("]");
+        return  champ + sb.toString();
     }
 
     public void add(ClashBan cb2) {
@@ -52,7 +62,7 @@ public class ClashBan implements Comparable<ClashBan> {
         score += cb2.score;
         reasons.addAll(cb2.reasons);
         reasons.sort(Comparator.comparingDouble(r -> -r.value));
-        reasons = reasons.stream().limit(2).collect(Collectors.toList());
+        reasons = reasons.stream().limit(MAX_REASONS).collect(Collectors.toList());
     }
 
     static ClashBan findClashban(List<ClashBan> scores, Champion champ) {
