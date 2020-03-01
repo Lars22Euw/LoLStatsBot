@@ -380,7 +380,7 @@ public class Manager {
         for (var s : summoners) {
             clashPlayers.add(new ClashPlayer(s));
         }
-        var clashTeam = new ClashTeam(clashPlayers, "FPX");
+        var clashTeam = new ClashTeam(clashPlayers, "FPX"); // I like it.
         return clashTeam.bans();
     }
 

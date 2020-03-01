@@ -139,7 +139,6 @@ class MyMessage {
     private List<Summoner> parseSummoners(String token) throws InputError {
         var result = new ArrayList<Summoner>();
         for (var s: token.split(",")) {
-            System.out.println("Summoner" + s);
             var summoner = Summoner.named(s).get();
             if (summoner == null || !summoner.exists()) {
                 throw new InputError("Input didn't match a summoner.\n");

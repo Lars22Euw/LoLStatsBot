@@ -6,7 +6,7 @@ public class Reason {
     public Reason(String message, double value) {
         this.message = message;
         this.value = value;
-        if (message.length() > longestReason) longestReason = message.length()+2;
+        if (message.length()+2 > longestReason) longestReason = message.length()+2;
     }
 
     @Override

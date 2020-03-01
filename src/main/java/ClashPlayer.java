@@ -1,10 +1,6 @@
 import com.merakianalytics.orianna.types.common.Lane;
 import com.merakianalytics.orianna.types.core.championmastery.ChampionMasteries;
 import com.merakianalytics.orianna.types.core.championmastery.ChampionMastery;
-import com.merakianalytics.orianna.types.core.match.Match;
-import com.merakianalytics.orianna.types.core.match.Participant;
-import com.merakianalytics.orianna.types.core.staticdata.Champion;
-import com.merakianalytics.orianna.types.core.staticdata.Champions;
 import com.merakianalytics.orianna.types.core.summoner.Summoner;
 import org.joda.time.DateTime;
 
@@ -16,6 +12,7 @@ import static com.merakianalytics.orianna.types.core.match.MatchHistory.forSummo
 public class ClashPlayer extends Player {
     public static final int MASTERY_LOWER_CUTOFF = 12000;
     private static final Double RECENTLY_SCALING = 170.0;
+    public static int SUMMONER_NAME_SIZE = 3;
     private int totalMastery;
     private List<Double> relativeMastery;
     private List<ChampionMastery> masteries;
@@ -44,6 +41,8 @@ public class ClashPlayer extends Player {
         super();
         super.summoner = sum;
         super.name = sum.getName();
+        if (sum.getName().length() > SUMMONER_NAME_SIZE)
+            SUMMONER_NAME_SIZE = sum.getName().length();
         now = DateTime.now();
         setMasteryScores(sum);
         setRecentScores(sum);
@@ -59,17 +58,15 @@ public class ClashPlayer extends Player {
             if (masteries.get(i).getPoints() < MASTERY_LOWER_CUTOFF) continue;
             var score = Math.log(masteries.get(i).getPoints() - 12000) * scale + relativeMastery.get(i) * (1 - scale) * 10;
             masteryScores.add(new ClashBan(masteries.get(i).getChampion(), score,
-                    makeReason(masteries.get(i).getPoints(),
-                               masteries.get(i).getChampion(),
-                              "mastery")));
+                    makeReason(masteries.get(i).getPoints())));
         }
     }
 
-    private String makeReason(double displayValue, Champion champion, String message) {
+    private String makeReason(double displayValue) {
         displayValue /= 1000;
-        String result = name + ": " + message + " (" + (int) displayValue;
-        if (displayValue / 1000 > 0) result += "m)";
-        else result += "k)";
+        String result = MyMessage.asString(name, SUMMONER_NAME_SIZE) + ": mastery (";
+        if ((displayValue / 1000) >= 1) result += (int) (displayValue/1000) + "m)";
+        else result += (int) displayValue + "k)";
         return  result;
     }
 
@@ -115,7 +112,7 @@ public class ClashPlayer extends Player {
 
     public void normalizeRecent() {
         recentScores.forEach(clashBan -> clashBan.score *= RECENTLY_SCALING / matches.size());
-        recentScores.forEach(clashBan -> clashBan.reasons.add(new Reason(name + ": "+(int) (clashBan.score * 1.5 + 1)
-                +" recency", clashBan.score)));
+        recentScores.forEach(clashBan -> clashBan.reasons.add(new Reason(MyMessage.asString(name, SUMMONER_NAME_SIZE) +
+                ": recency (" + (int) (clashBan.score * 1.5 + 1) + ")", clashBan.score)));
     }
 }
