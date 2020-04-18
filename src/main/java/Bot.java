@@ -68,7 +68,7 @@ public class Bot {
     private Integer help(Message m) {
         var messageChannel = m.getChannel().block();
         Mono<Message> message = messageChannel.createMessage(messageSpec -> {
-            messageSpec.setContent("Content not in an embed!");
+            messageSpec.setContent("Miau Content not in an embed!");
             // You can see in this example even with simple singular property defining specs the syntax is concise
             messageSpec.setEmbed(embedSpec -> {
                 embedSpec.setDescription("Description is in an embed!");
