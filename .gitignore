@@ -1,2 +1,3 @@
-/src/main/ori.zip
-/summoners/
+target
+nohup.out
+*.txt
