@@ -80,7 +80,7 @@ public class Manager {
         //m.printMatrix(playedWith);
         m.writeGEXF(playedWith);
         var user = m.users.get(0);
-        //System.out.println("User: "+user.name);
+        //System.out.println("User: "+user.analyse);
         displayGames(gamesByWeek(user.matches));
         //System.out.println(user.matches.last().time.toString());
         int[] avgGamesDay = new int[7];

@@ -70,6 +70,12 @@ public class ClashPlayer extends Player {
         return  result;
     }
 
+    private String makeReason2(double score) {
+        String result = MyMessage.asString(name, SUMMONER_NAME_SIZE) + ": recency (";
+        result += (int) (score * 1.5 + 1) + ")";
+        return result;
+    }
+
     private void setRecentScores(Summoner sum) {
         this.matches = new TreeSet<>(Game::compare2);
         // TODO: Handle NONE
@@ -112,7 +118,7 @@ public class ClashPlayer extends Player {
 
     public void normalizeRecent() {
         recentScores.forEach(clashBan -> clashBan.score *= RECENTLY_SCALING / matches.size());
-        recentScores.forEach(clashBan -> clashBan.reasons.add(new Reason(MyMessage.asString(name, SUMMONER_NAME_SIZE) +
-                ": recency (" + (int) (clashBan.score * 1.5 + 1) + ")", clashBan.score)));
+        recentScores.forEach(clashBan -> clashBan.reasons.add(
+                new Reason(makeReason2(clashBan.score), clashBan.score)));
     }
 }

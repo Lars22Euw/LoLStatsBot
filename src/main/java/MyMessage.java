@@ -1,11 +1,14 @@
+import com.merakianalytics.orianna.Orianna;
 import com.merakianalytics.orianna.types.common.Queue;
 import com.merakianalytics.orianna.types.core.staticdata.Champion;
 import com.merakianalytics.orianna.types.core.summoner.Summoner;
 import org.joda.time.DateTime;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.SortedSet;
+import java.io.BufferedReader;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
+import java.util.*;
 
 /**
  * Used to build a string to send in discord.
@@ -18,12 +21,34 @@ class MyMessage {
     private StringBuilder sb = new StringBuilder();
     private static final int MONTHS_IN_THE_PAST = 3;
 
+    private static Map<String, String> names = new HashMap<>();
+    static {
+        try {
+            final var br = new BufferedReader(
+                    new FileReader("names-lookup.txt"));
+            while (br.ready()) {
+                String line = br.readLine();
+                //"Ben-SattenLink-LarsmonX"
+                // TODO: something with smurfs
+                var split = line.split("-");
+                names.put(split[0], split[1]);
+            }
+            br.close();
+        } catch (FileNotFoundException e) {
+            System.out.println("Loaded without names-lookup");
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+
     MyMessage(String command_input, Manager manager) {
         this.manager = manager;
 
         var tokens = command_input.trim().split(" ");
         if (tokens.length < 2) {
-            sb.append("Expected at least one summoner name.\n");
+            sb.append("Expected at least one summoner analyse.\n");
             return;
         }
 
@@ -106,7 +131,7 @@ class MyMessage {
         this.manager = manager;
     }
 
-    private List<Queue> parseQueues(String token) throws InputError {
+    private static List<Queue> parseQueues(String token) throws InputError {
         var result = new ArrayList<Queue>();
         for (var q: token.split(",")) {
             try {
@@ -114,19 +139,19 @@ class MyMessage {
                 System.out.println("Parsed Queue "+ queue.name());
                 result.add(queue);
             } catch (IllegalArgumentException e) {
-                throw new InputError("Input did not match queuetypes.\n");
+                throw new InputError(q+" did not match a queue.\n");
             }
         }
         return result;
     }
 
-    private List<Champion> parseChamps(String token) throws InputError {
+    private static List<Champion> parseChamps(String token) throws InputError {
         var result = new ArrayList<Champion>();
         for (var c: token.split(",")) {
             var cname = c.substring(0, 1).toUpperCase() + c.substring(1).toLowerCase();
             var champion = Champion.named(cname).get();
             if (champion == null || !champion.exists()) {
-                throw new InputError("Input didn't match a champion.\n");
+                throw new InputError(c+" didn't match a champion.\n");
             } else {
                 System.out.println("Parsed "+c);
                 result.add(champion);
@@ -136,18 +161,20 @@ class MyMessage {
         return result;
     }
 
-    private List<Summoner> parseSummoners(String token) throws InputError {
+    private static List<Summoner> parseSummoners(String token) throws InputError {
         var result = new ArrayList<Summoner>();
         for (var s: token.split(",")) {
+            if (s.startsWith("\\")) s = s.substring(1);
+            else if (names.containsKey(s)) s = names.get(s);
             var summoner = Summoner.named(s).get();
             if (summoner == null || !summoner.exists()) {
-                throw new InputError("Input didn't match a summoner.\n");
+                var region = summoner.getRegion().toString();
+                throw new InputError(s + " not present in " + region + ".\n");
             } else {
-                System.out.println("Parsed "+s);
+                System.out.println("Parsed summoner "+s);
                 result.add(summoner);
             }
         }
-        System.out.println("end of sum");
         return result;
     }
 
@@ -157,7 +184,7 @@ class MyMessage {
             try {
                 String sub = s.substring(0, s.length()-1);
                 date = getDateMinus(Integer.parseInt(sub), 6);
-                System.out.println("Parsed "+sub);
+                System.out.println("Parsed "+date.toString(DATE_PATTERN));
                 return date;
             } catch (Exception e) {
                 e.printStackTrace();
@@ -293,7 +320,13 @@ class MyMessage {
 
     public String[] clash(String input) {
         System.out.println("pre clash");
-        var summoners = parseSummoners(input.split(" ")[1]);
+        List<Summoner> summoners = null;
+        try {
+            summoners = parseSummoners(input.split(" ")[1]);
+
+        } catch (InputError e) {
+            return new String[]{e.error};
+        }
         System.out.println("pre do clash");
         return manager.doStuffWithClash(summoners);
     }
