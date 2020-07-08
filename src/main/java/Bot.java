@@ -1,18 +1,11 @@
-import discord4j.core.DiscordClient;
-import discord4j.core.DiscordClientBuilder;
+import discord4j.core.*;
 import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.object.entity.Message;
-import discord4j.core.object.util.Image;
-import discord4j.core.spec.EmbedCreateSpec;
+import discord4j.core.object.util.Snowflake;
 import reactor.core.publisher.Mono;
 
-import java.awt.*;
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.util.*;
+import java.awt.Color;
 import java.util.List;
-import java.util.function.Consumer;
 
 public class Bot {
 
@@ -22,12 +15,12 @@ public class Bot {
     private Manager manager;
 
     private List<Command> commands = List.of(
-            new Command("matches", this::matches),
             new Command("m", this::matches),
+            new Command("matches", this::matches),
             new Command("c", this::clash),
             new Command("clash", this::clash),
-            new Command("help", this::help),
-            new Command("h", this::help));
+            new Command("h", this::help),
+            new Command("help", this::help));
 
     private Integer clash(Message message) {
         var msgText = message.getContent().get();
@@ -37,7 +30,7 @@ public class Bot {
             //System.out.println("some " + line);
             sb.append(line).append("\n");
         }
-        System.out.println(sb.toString());
+        System.out.println("Clash: "+sb.toString());
         message.getChannel().block().createMessage("```" + "\nBans in order:\n" + sb.toString() + "```").block();
         return 0;
     }
@@ -48,8 +41,7 @@ public class Bot {
     }
 
     private Integer matches(Message message) {
-        var msgText = message.getContent().get();
-        var resp = message(msgText);
+        var resp = message(message);
         if (resp == null || resp.length == 0) {
             System.out.println("Empty msg");
         }
@@ -67,53 +59,22 @@ public class Bot {
 
     private Integer help(Message m) {
         var messageChannel = m.getChannel().block();
-        Mono<Message> message = messageChannel.createMessage(messageSpec -> {
-            messageSpec.setContent("Miau Content not in an embed!");
-            // You can see in this example even with simple singular property defining specs the syntax is concise
-            messageSpec.setEmbed(embedSpec -> {
-                embedSpec.setDescription("Description is in an embed!");
-                embedSpec.setColor(Color.PINK);
-            });
-        });
-        message.block();
-        messageChannel.createMessage("You can message this bot directly.\n" +
-                "`.help` will display this very help message.\n" +
-                "`.matches` will list matches per day for a given user.\n" +
-                "`.clash` will return suitable bans against a list of players.").block();
-        Mono<Message> message2 = messageChannel.createMessage(messageSpec -> {
-            // You can see in this example even with simple singular property defining specs the syntax is concise
-            messageSpec.setEmbed(embedSpec -> {
-                System.out.println("starting");
-                embedSpec.setColor(Color.PINK).setImage("https://i.imgur.com/wSTFkRM.png");
-                embedSpec.setDescription("I'm testing embeds!");
-                embedSpec.setTitle("Kuchen");
-                embedSpec.addField("Cat", "HI :wave: \n miau", true);
-                embedSpec.addField("Dog", "HO :wave:", true);
-                embedSpec.addField("Cat", "miau", false)
-                        .setUrl("https://i.imgur.com/wSTFkRM.png");
-                embedSpec.setDescription("some other");
-            });
-        });
         messageChannel.createMessage(messageSpec -> {
-            // You can see in this example even with simple singular property defining specs the syntax is concise
             messageSpec.setEmbed(embedSpec -> {
-                System.out.println("starting");
-                embedSpec.setColor(Color.PINK).setImage("https://i.imgur.com/wSTFkRM.png");
-                embedSpec.setDescription("I'm testing embeds!");
-                embedSpec.setTitle("Kuchen");
-                embedSpec.addField("Elephant", "HI :wave: \n miau", true);
-                embedSpec.addField("Dog", "HO :wave:", true);
-                embedSpec.addField("Cat", "miau", false)
-                        .setUrl("https://i.imgur.com/wSTFkRM.png");
-                embedSpec.setDescription("some other");
+                embedSpec//.setColor(Color.BLUE)
+                        .setTitle("LoL Stats Commands")
+                        .setDescription("You can message this bot directly.\n" +
+                                "Arguments are space separated, use `,` within args\n"+
+                                "`.matches Lars -c Garen,Teemo`")
+                        .addField(".help COMMAND", "will display this very help message.", false)
+                        .addField(".matches SUMS -c CHAMPS -q QUEUES", "graphs matches per day with various filters.", false)
+                        .addField(".clash SUMS", "Picks and bans prediction for list of players.", false)
+                .setUrl("https://github.com/Lars22Euw/LoLStatsBot")
+                ;
             });
-            messageSpec.setContent("I like to eat cake!");
-            messageSpec.setTts(true);
 
         }).block();
-        message2.block();
 
-        System.out.println("done");
         return 0;
     }
 
@@ -122,16 +83,17 @@ public class Bot {
         client = new DiscordClientBuilder(discordAPI).build();
     }
 
-    private String[] message(String input) {
+    private String[] message(Message message) {
          if (manager == null) System.out.println("manager is null");
-         return new MyMessage(input, manager).build();
+        var msgText = message.getContent().orElseThrow();
+         return new MyMessage(msgText, manager).build();
     }
 
     public static void main(String[] args) {
         var s = new Bot(args[0], args[1]);
         s.getCommands(s.client);
 
-        s.client.getGuilds().blockFirst().createEmoji(spec -> {
+        /*s.client.getGuilds().blockFirst().createEmoji(spec -> {
             File fi = new File("Aatrox.png");
             try {
                 byte[] fileContent = Files.readAllBytes(fi.toPath());
@@ -143,9 +105,10 @@ public class Bot {
 
         }).block();
         s.client.getGuilds().blockFirst().getEmojis().filter(ge -> ge.getName().equals("myaatrox")).blockFirst().delete().block();
-
-
-        System.out.println("emoji");
+        System.out.println("emoji");*/
+        var guild = s.client.getGuildById(Snowflake.of(591616808835088404l)).block();
+        var name = guild.getOwner().block().getDisplayName();
+        System.out.println(name);
         s.client.login().block();
     }
 
