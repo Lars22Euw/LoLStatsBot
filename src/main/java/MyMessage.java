@@ -74,6 +74,7 @@ class MyMessage {
     private static String cleanIt(String input) {
         return input.replace(" ", "")
                 .replace("'", "")
+                .replace(".", "")
                 .toLowerCase().trim();
     }
 
@@ -182,18 +183,19 @@ class MyMessage {
     private static List<Champion> parseChamps(String token) throws InputError {
         var result = new ArrayList<Champion>();
         for (var c: token.split(",")) {
+            c = cleanIt(c);
             Champion champion;
-            if (champs.containsKey(c.toLowerCase())) {
-                champion = champs.get(c.toLowerCase());
-            } else if (champs.containsKey(c.toLowerCase().substring(0, 4))) {
-                champion = champs.get(c.toLowerCase().substring(0, 4));
+            if (champs.containsKey(c)) {
+                champion = champs.get(c);
+            } else if (champs.containsKey(c.substring(0, 4))) {
+                champion = champs.get(c.substring(0, 4));
             } else {
-                champion = champs.get(c.toLowerCase().substring(0, 3));
+                champion = champs.get(c.substring(0, 3));
             }
             if (champion == null || !champion.exists()) {
                 throw new InputError(c+" didn't match a champion.\n");
             } else {
-                System.out.println("Parsed "+c);
+                System.out.println("Parsed "+champion.getName());
                 result.add(champion);
             }
         }

@@ -11,10 +11,10 @@ public class Bot {
 
     private static final String PREFIX = ".";
 
-    private DiscordClient client;
-    private Manager manager;
+    private final DiscordClient client;
+    private final Manager manager;
 
-    private List<Command> commands = List.of(
+    private final List<Command> commands = List.of(
             new Command("m", this::matches),
             new Command("matches", this::matches),
             new Command("c", this::clash),
@@ -59,34 +59,64 @@ public class Bot {
 
     private Integer help(Message m) {
         var messageChannel = m.getChannel().block();
-        messageChannel.createMessage(messageSpec -> {
-            messageSpec.setEmbed(embedSpec -> {
-                embedSpec//.setColor(Color.BLUE)
-                        .setTitle("LoL Stats Commands")
-                        .setDescription("You can message this bot directly.\n" +
-                                "Arguments are space separated, use `,` within args\n"+
-                                "`.matches Lars -c Garen,Teemo`")
-                        .addField(".help COMMAND", "will display this very help message.", false)
-                        .addField(".matches SUMS -c CHAMPS -q QUEUES", "graphs matches per day with various filters.", false)
-                        .addField(".clash SUMS", "Picks and bans prediction for list of players.", false)
-                .setUrl("https://github.com/Lars22Euw/LoLStatsBot")
-                ;
-            });
+        if (m.getContent().get().toLowerCase().contains("matches")) {
+            messageChannel.createMessage(messageSpec -> {
+                final String[][] fields = {
+                        {"SUMS", "List of players or shorthands: Lars,FoxDrop"},
+                        {"-c CHAMPS", "List of champions: lee,LeeSin,mundo,DrMundo"},
+                        {"-q QUEUES", "List of queues: ARAM,clash,Custom,normal,Ranked"},
+                        {"-t TIME", "months in the past until now: 2m"}};
+                messageSpec.setEmbed(setEmbed(".m .matches",
+                        "`.m SUMS -c CHAMPS -q QUEUES -t TIME`\n" +
+                                "Arguments are space separated, use `,` within args\n" +
+                                "`.matches Lars -c Garen,Teemo`", fields));
+            }).block();
+        } else if (m.getContent().get().toLowerCase().contains("clash")) {
+            messageChannel.createMessage(messageSpec -> {
+                final String[][] fields = {
+                        {"SUMS", "List of players or shorthands: Lars,FoxDrop"}};
+                messageSpec.setEmbed(setEmbed(".c .clash",
+                        "`.c SUMS`\n" +
+                                "Arguments are space separated, use `,` within args\n" +
+                                "`.clash Lars,Thomas,TeemoMain`\n"+
+                                "Based on recent games and champion mastery", fields));
+            }).block();
+        } else {
+            messageChannel.createMessage(messageSpec -> {
+                final String[][] fields = {
+                        {".help COMMAND", "will display this very help message."},
+                        {".matches SUMS -c CHAMPS -q QUEUES", "graphs matches per day with various filters."},
+                        {".clash SUMS", "Picks and bans prediction for list of players."}};
+                messageSpec.setEmbed(setEmbed("LoL Stats Commands",
+                        "You can dm this bot.\n" +
+                                "Arguments are space separated, use `,` within args\n" +
+                                "`.matches Lars -c Garen,Teemo`", fields));
+            }).block();
+        }
 
-        }).block();
 
         return 0;
     }
 
-     Bot(String riotAPI, String discordAPI) {
+    private Consumer<EmbedCreateSpec> setEmbed(String title, String description, String[][] fields) {
+        return embedSpec -> {
+            embedSpec.setTitle(title).setDescription(description)
+                     .setUrl("https://github.com/Lars22Euw/LoLStatsBot");
+            for (var f: fields) {
+                embedSpec.addField(f[0], f[1], false);
+            }
+        };
+    }
+
+    Bot(String riotAPI, String discordAPI) {
         manager = new Manager(riotAPI);
         client = new DiscordClientBuilder(discordAPI).build();
     }
 
     private String[] message(Message message) {
-         if (manager == null) System.out.println("manager is null");
+        if (manager == null) System.out.println("manager is null");
         var msgText = message.getContent().orElseThrow();
-         return new MyMessage(msgText, manager).build();
+        return new MyMessage(msgText, manager).build();
     }
 
     public static void main(String[] args) {
