@@ -50,6 +50,7 @@ public class Manager {
     Manager(String apiKey) {
         Orianna.setRiotAPIKey(apiKey);
         Orianna.setDefaultRegion(Region.EUROPE_WEST);
+        MyMessage.setChamps();
     }
 
     public static void main(final String[] args) throws InterruptedException {

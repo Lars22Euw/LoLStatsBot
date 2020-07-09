@@ -1,6 +1,7 @@
 import com.merakianalytics.orianna.Orianna;
 import com.merakianalytics.orianna.types.common.Queue;
 import com.merakianalytics.orianna.types.core.staticdata.Champion;
+import com.merakianalytics.orianna.types.core.staticdata.Champions;
 import com.merakianalytics.orianna.types.core.summoner.Summoner;
 import org.joda.time.DateTime;
 
@@ -42,6 +43,39 @@ class MyMessage {
         }
     }
 
+    private static Map<String, Champion> champs= new HashMap<>();
+    static void setChamps() {
+        for (var champ: Champions.get()) {
+            var nameOrigin = champ.getName();
+            var nameClean = cleanIt(nameOrigin);
+
+            if (nameOrigin.length() <= 4) {
+                // VI is evil
+                champs.put(nameClean, champ);
+                //System.out.println(nameClean + " has a short name");
+                continue;
+            }
+            var name3 = nameClean.substring(0, 3);
+
+            if (champs.containsKey(name3)) {
+                // if not unique, extend old and new to 4 letters
+                final Champion oldChamp = champs.get(name3);
+                //System.out.println(oldChamp.getName() + " matches " + nameClean);
+                champs.remove(name3);
+                champs.put(cleanIt(oldChamp.getName()).substring(0, 4), oldChamp);
+                champs.put(nameClean.substring(0, 4), champ);
+            } else champs.put(name3, champ);
+            champs.put(nameClean, champ);
+        }
+        champs.put("mundo", Champion.named("Dr. Mundo").get());
+        //for (var c: champs.entrySet()) System.out.println(c.getKey());
+    }
+
+    private static String cleanIt(String input) {
+        return input.replace(" ", "")
+                .replace("'", "")
+                .toLowerCase().trim();
+    }
 
     MyMessage(String command_input, Manager manager) {
         this.manager = manager;
@@ -148,8 +182,14 @@ class MyMessage {
     private static List<Champion> parseChamps(String token) throws InputError {
         var result = new ArrayList<Champion>();
         for (var c: token.split(",")) {
-            var cname = c.substring(0, 1).toUpperCase() + c.substring(1).toLowerCase();
-            var champion = Champion.named(cname).get();
+            Champion champion;
+            if (champs.containsKey(c.toLowerCase())) {
+                champion = champs.get(c.toLowerCase());
+            } else if (champs.containsKey(c.toLowerCase().substring(0, 4))) {
+                champion = champs.get(c.toLowerCase().substring(0, 4));
+            } else {
+                champion = champs.get(c.toLowerCase().substring(0, 3));
+            }
             if (champion == null || !champion.exists()) {
                 throw new InputError(c+" didn't match a champion.\n");
             } else {
@@ -163,6 +203,7 @@ class MyMessage {
 
     private static List<Summoner> parseSummoners(String token) throws InputError {
         var result = new ArrayList<Summoner>();
+
         for (var s: token.split(",")) {
             if (s.startsWith("\\")) s = s.substring(1);
             else if (names.containsKey(s)) s = names.get(s);
