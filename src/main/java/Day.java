@@ -13,6 +13,7 @@ public class Day implements  Comparable<Day> {
 
     @Override
     public int compareTo(Day o) {
-        return (int) ((this.time.getMillis() - o.time.getMillis())/1000);
+        final long mills = this.time.getMillis() - o.time.getMillis();
+        return (int) (mills /1000);
     }
 }

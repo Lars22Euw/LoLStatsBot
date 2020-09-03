@@ -1,13 +1,11 @@
 import com.merakianalytics.orianna.types.core.match.Match;
 import com.merakianalytics.orianna.types.core.match.MatchHistory;
+import com.merakianalytics.orianna.types.core.staticdata.Champion;
 import com.merakianalytics.orianna.types.core.summoner.Summoner;
 import org.joda.time.DateTime;
 
 import java.io.*;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.SortedSet;
-import java.util.TreeSet;
+import java.util.*;
 
 /**
  *  a player contains one summoner in the default region.
@@ -29,8 +27,7 @@ public class Player {
         this.summoner = sum;
         var latest = read(manager);
 
-        System.out.println(latest.toString());
-        System.out.println("matches size: "+matches.size());
+        System.out.println("Latest "+Util.dtf.print(latest));
         MatchHistory history = summoner.matchHistory().withStartTime(latest).get();
 
         for (Match match: history) {
@@ -43,7 +40,7 @@ public class Player {
             System.out.println(name+ " played 0 games.");
             manager.summonersInactive.add(name);
         } else  if (history.size() <= 1) {
-            System.out.println("");
+            System.out.println();
         } else {
             manager.summonersActive.add(this);
             var size = history.size()-1;
@@ -66,7 +63,7 @@ public class Player {
                 matches.add(game);
                 manager.games.add(game);
             }
-            System.out.print(name+" "+matches.size());
+            System.out.println(name+" "+matches.size());
         } catch (FileNotFoundException e) {
             // TODO: no file found. init empty set.
             System.out.println(name+" has no file.");
@@ -94,12 +91,14 @@ public class Player {
 
     }
 
-    List<Summoner> getPremades(List<Match> games) {
-        List result = new ArrayList<Summoner>();
-        List allSumoners = new ArrayList<Summoner>();
+    public List<Summoner> getPremades(List<Match> games) {
+        var result = new ArrayList<Summoner>();
+        var allSummoners = new ArrayList<Summoner>();
 
-        if (games == null || games.size() == 0)
+        if (games == null || games.size() == 0){
+            System.out.println("No games found.");
             return result;
+        }
 
         if (games.size() == 1) {
             System.out.println("Cannot detect premades from one match alone.");
@@ -116,24 +115,83 @@ public class Player {
         System.out.println("Checking premades for: "+name);
 
         for (var game: games) {
-            //game.getBlueTeam().getParticipants().get(0).
-            Summoner[] players = game.getBlueTeam().getParticipants().contains(summoner)
-                    ? game.getBlueTeam().getParticipants().stream().map(s -> s.getSummoner()).toArray(Summoner[]::new)
-                    : game.getRedTeam().getParticipants().stream().map(s -> s.getSummoner()).toArray(Summoner[]::new);
-            //var players = game.getParticipants();
-            for (var player: players) {
-                if (allSumoners.contains(player) && !result.contains(player)) {
+            for (var player: Util.getPlayers(summoner, game)) {
+                if (player.equals(summoner)) continue;
+
+                if (allSummoners.contains(player) && !result.contains(player)) {
                     result.add(player);
                     System.out.println("Added "+player.getName());
                 }
-                if (!allSumoners.contains(player)) allSumoners.add(player);
+                if (!allSummoners.contains(player)) allSummoners.add(player);
             }
         }
 
-        System.out.println("Found "+ result.size()+ " hits out of "+allSumoners.size()+" players.");
+        System.out.println("Found "+ result.size()+ " hits out of "+allSummoners.size()+" players.");
 
         return result;
     }
 
+     HashMap<Integer, Pair> lookupChamps(List<Match> games) {
+        var gamesWon = new HashMap<Integer, Pair>();
+        for (var game: games) {
+            var p = game.getParticipants().find(pa -> pa.getSummoner().equals(summoner));
+            final boolean winning = p.getTeam().isWinner();
+            final int id = p.getChampion().getId();
+            if (gamesWon.containsKey(id)) {
+                gamesWon.get(id).add(winning);
+            } else gamesWon.put(id, new Pair(winning));
+        }
+        return gamesWon;
+    }
+
+    void printChamps(HashMap<Integer, Pair> games, int gamesPlayed) {
+        var result = new ArrayList<>(games.entrySet());
+        result.sort(comparator);
+        for (var entry : result) {
+            if (entry.getValue().games < gamesPlayed) continue;
+            var name = Champion.withId(entry.getKey()).get().getName();
+            System.out.println(name + " " + entry.getValue().wins + "/" + entry.getValue().games);
+        }
+    }
+
+
+    /**
+     * games won with this player
+     * @param games a list of games to check
+     * @return Map of wins and total games per playerID
+     */
+    public static HashMap<String, Pair> lookup(List<Match> games, Summoner summoner) {
+        var gamesTogether = new HashMap<String, Pair>();
+        for (var game : games) {
+            var team = Util.getTeam(summoner, game);
+            var winning = team.isWinner();
+            for (var p : team.getParticipants()) {
+                var sum = p.getSummoner().getAccountId();
+                if (gamesTogether.containsKey(sum)) {
+                    gamesTogether.get(sum).add(winning);
+                } else {
+                    gamesTogether.put(sum, new Pair(winning));
+                }
+            }
+        }
+        return gamesTogether;
+    }
+
+    Comparator comparator = (Comparator<Map.Entry<Object, Pair>>) (o1, o2) -> o1.getValue().compareTo(o2.getValue());
+
+    public void printLookup(HashMap<String, Pair> games, int gamesPlayed) {
+        var result = new ArrayList<>(games.entrySet());
+        result.sort(comparator);
+        for (var entry : result) {
+            if (entry.getValue().games < gamesPlayed) continue;
+            var name = Summoner.withId(entry.getKey()).get().getName();
+            System.out.println(name + " " + entry.getValue().wins + "/" + entry.getValue().games);
+        }
+        System.out.println("Total wins: "+games.get(summoner.getAccountId()).wins + " from "+games.get(summoner.getAccountId()).games);
+    }
+
+    public static void main(String[] args) {
+        var res = MyMessage.stalk(Summoner.named("PinkMeowerRanger").get(),  2, null);
+    }
 
 }

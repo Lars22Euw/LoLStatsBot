@@ -2,10 +2,10 @@ import discord4j.core.*;
 import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.object.entity.Message;
 import discord4j.core.object.util.Snowflake;
-import reactor.core.publisher.Mono;
+import discord4j.core.spec.EmbedCreateSpec;
 
-import java.awt.Color;
 import java.util.List;
+import java.util.function.Consumer;
 
 public class Bot {
 
@@ -19,8 +19,25 @@ public class Bot {
             new Command("matches", this::matches),
             new Command("c", this::clash),
             new Command("clash", this::clash),
+            new Command("s", this::stalk),
+            new Command("stalk", this::stalk),
             new Command("h", this::help),
             new Command("help", this::help));
+
+    private Integer stalk(Message message) {
+        var msgText = message.getContent().get();
+        var args = msgText.split(" ");
+        final var sum = MyMessage.parseSummoners(args[1]).get(0);
+        final int gamesTogether = (args.length < 3) ? 2 : Integer.parseInt(args[2]);
+        final var queues = (args.length < 4) ? null : MyMessage.parseQueues(args[3]);
+        var resp = MyMessage.stalk(sum, gamesTogether, queues);
+        StringBuilder sb = new StringBuilder();
+        sb.append(resp);
+        System.out.println("Stalk: "+sb.toString());
+        message.getChannel().block().createMessage("```" + sb.toString() + "```").block();
+        return 0;
+    }
+
 
     private Integer clash(Message message) {
         var msgText = message.getContent().get();
@@ -71,6 +88,19 @@ public class Bot {
                                 "Arguments are space separated, use `,` within args\n" +
                                 "`.matches Lars -c Garen,Teemo`", fields));
             }).block();
+        } else if (m.getContent().get().toLowerCase().contains("stalk")) {
+            messageChannel.createMessage(messageSpec -> {
+                final String[][] fields = {
+                        {"SUM", "Player or shorthand: `Lars` or `FoxDrop`"},
+                        {"MIN", "min games together : `2`"},
+                        {"QUEUES", "Queues or shorthands: `SR,ranked,ARAM`"}
+                };
+                messageSpec.setEmbed(setEmbed(".s .stalk",
+                        "`.s SUM MIN QUEUES`\n" +
+                                "`.sum Lars 2 CLASH`\n"+
+                                "From last 70 games with MIN games together in given queues\n" +
+                                "SR = summoners rift: blind, clash, custom, normal, ranked", fields));
+            }).block();
         } else if (m.getContent().get().toLowerCase().contains("clash")) {
             messageChannel.createMessage(messageSpec -> {
                 final String[][] fields = {
@@ -84,9 +114,11 @@ public class Bot {
         } else {
             messageChannel.createMessage(messageSpec -> {
                 final String[][] fields = {
-                        {".help COMMAND", "will display this very help message."},
+                        {".clash SUMS", "Draft prediction for list of players."},
+                        {".help COMM", "Help for specific command."},
                         {".matches SUMS -c CHAMPS -q QUEUES", "graphs matches per day with various filters."},
-                        {".clash SUMS", "Picks and bans prediction for list of players."}};
+                        {".stalk SUM MIN QUEUES", "recent Summoners you played with."}
+                };
                 messageSpec.setEmbed(setEmbed("LoL Stats Commands",
                         "You can dm this bot.\n" +
                                 "Arguments are space separated, use `,` within args\n" +

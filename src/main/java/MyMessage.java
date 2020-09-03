@@ -1,5 +1,5 @@
-import com.merakianalytics.orianna.Orianna;
 import com.merakianalytics.orianna.types.common.Queue;
+import com.merakianalytics.orianna.types.core.match.MatchHistory;
 import com.merakianalytics.orianna.types.core.staticdata.Champion;
 import com.merakianalytics.orianna.types.core.staticdata.Champions;
 import com.merakianalytics.orianna.types.core.summoner.Summoner;
@@ -10,14 +10,15 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.*;
+import java.util.stream.Collectors;
+
+import static java.util.Map.*;
 
 /**
  * Used to build a string to send in discord.
  */
 class MyMessage {
 
-    // TODO: time is displayed wrong.
-    public static final String DATE_PATTERN = "EE ee. MM. yyyy";
     private Manager manager;
     private StringBuilder sb = new StringBuilder();
     private static final int MONTHS_IN_THE_PAST = 3;
@@ -150,8 +151,8 @@ class MyMessage {
 
         DateTime endDate = DateTime.now();
         System.out.println("Args: sums champs queues "+summoners.size()+" "+champions.size()+" "+queues.size()+
-                "\nStart: "+ startDate.toString(DATE_PATTERN)+
-                "\nEnd:   "+ endDate.toString(DATE_PATTERN));
+                "\nStart: "+ Util.dtf.print(startDate)+
+                "\nEnd:   "+ Util.dtf.print(endDate));
 
         SortedSet<Game> matches = manager.gamesWith(summoners, champions, queues, startDate, endDate);
         if (matches == null || matches.size() == 0) {
@@ -166,11 +167,23 @@ class MyMessage {
         this.manager = manager;
     }
 
-    private static List<Queue> parseQueues(String token) throws InputError {
+    public static List<Queue> parseQueues(String token) throws InputError {
         var result = new ArrayList<Queue>();
         for (var q: token.split(",")) {
             try {
-                var queue = Queue.valueOf(q.toUpperCase());
+                final String queueName = q.toUpperCase();
+                if (queueName.equals("SR")) {
+                    result.addAll(List.of(Queue.NORMAL, Queue.CLASH, Queue.CUSTOM, Queue.BLIND_PICK));
+                    result.addAll(Queue.RANKED);
+                    System.out.println("Parsed Queues on Summoners Rift");
+                    continue;
+                }
+                if (queueName.equals("RANKED")) {
+                    result.addAll(Queue.RANKED);
+                    System.out.println("Parsed Queue Ranked");
+                    continue;
+                }
+                var queue = Queue.valueOf(queueName);
                 System.out.println("Parsed Queue "+ queue.name());
                 result.add(queue);
             } catch (IllegalArgumentException e) {
@@ -203,7 +216,7 @@ class MyMessage {
         return result;
     }
 
-    private static List<Summoner> parseSummoners(String token) throws InputError {
+    public static List<Summoner> parseSummoners(String token) throws InputError {
         var result = new ArrayList<Summoner>();
 
         for (var s: token.split(",")) {
@@ -221,13 +234,34 @@ class MyMessage {
         return result;
     }
 
+    public static String stalk(Summoner sum, int gamesTogether, List<Queue> queues) {
+
+        StringBuilder output = new StringBuilder("Games for " + sum.getName() + " with at least " + gamesTogether + " games together:\n");
+        MatchHistory games;
+        if (queues == null || queues.size() == 0)
+             games = MatchHistory.forSummoner(sum).withEndIndex(70).get();
+        else games = MatchHistory.forSummoner(sum).withQueues(queues).withEndIndex(70).get();
+
+        var gamesFiltered = Player.lookup(games, sum).entrySet().stream().
+                filter(e -> e.getValue().games > gamesTogether).
+                sorted(Entry.comparingByValue()).
+                collect(Collectors.toCollection(ArrayList::new));
+        for (int i = 1; i < gamesFiltered.size() && i < 11; i++) {
+            var entry = gamesFiltered.get(gamesFiltered.size() -i);
+            var name = Summoner.withId(entry.getKey()).get().getName();
+            output.append(entry.getValue().wins + "/" + entry.getValue().games + "\t" + name + "\n");
+        }
+
+        return output.toString();
+    }
+
     private DateTime parseTime(String s) {
         if (s.endsWith("m")) {
             DateTime date;
             try {
                 String sub = s.substring(0, s.length()-1);
                 date = getDateMinus(Integer.parseInt(sub), 6);
-                System.out.println("Parsed "+date.toString(DATE_PATTERN));
+                System.out.println("Parsed "+Util.dtf.print(date));
                 return date;
             } catch (Exception e) {
                 e.printStackTrace();

@@ -1,9 +1,6 @@
-import com.merakianalytics.orianna.types.core.staticdata.Champion;
-import com.merakianalytics.orianna.types.core.staticdata.Champions;
 import com.merakianalytics.orianna.types.core.summoner.Summoner;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 
 public class ClashTeam {

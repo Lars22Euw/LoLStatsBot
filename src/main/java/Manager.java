@@ -16,7 +16,6 @@ public class Manager {
     SortedSet<Game> games = new TreeSet<>();
     List<Player> summonersActive = new ArrayList<>();
     List<String> summonersInactive = new ArrayList<>();
-    List<String> bans;
 
     private Manager (String filename, String apiKey) {
         this(apiKey);
@@ -53,7 +52,7 @@ public class Manager {
         MyMessage.setChamps();
     }
 
-    public static void main(final String[] args) throws InterruptedException {
+    public static void main(final String[] args) {
         var m = new Manager(args[0]);
         System.out.println("testing premades.");
         var Lars = Summoner.named("TheLars22").get();
@@ -116,7 +115,7 @@ public class Manager {
     }
 
     static SortedSet<Day> gamesPerDay(SortedSet<Game> matches) {
-        SortedSet days = new TreeSet<Day>();
+        var days = new TreeSet<Day>();
 
         if (matches == null || matches.size() == 0) {
             return days;
