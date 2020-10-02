@@ -1,3 +1,5 @@
+import com.merakianalytics.orianna.types.common.Queue;
+import com.merakianalytics.orianna.types.core.summoner.Summoner;
 import discord4j.core.*;
 import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.object.entity.Message;
@@ -27,9 +29,32 @@ public class Bot {
     private Integer stalk(Message message) {
         var msgText = message.getContent().get();
         var args = msgText.split(" ");
-        final var sum = MyMessage.parseSummoners(args[1]).get(0);
-        final int gamesTogether = (args.length < 3) ? 2 : Integer.parseInt(args[2]);
-        final var queues = (args.length < 4) ? null : MyMessage.parseQueues(args[3]);
+        if (args.length < 2) {
+            message.getChannel().block().createMessage("```Expected at least a Summoner```").block();
+            return -1;
+        }
+        final Summoner sum;
+        try {
+            sum = MyMessage.parseSummoners(args[1]).get(0);
+        } catch (InputError e) {
+            message.getChannel().block().createMessage("```"+e.error+"```").block();
+            return -1;
+        }
+        final int gamesTogether;
+        try {
+            gamesTogether = (args.length < 3) ? 2 : Integer.parseInt(args[2]);
+        } catch (Exception e) {
+            message.getChannel().block().createMessage("```Tried to parse number but found: "+args[2]+"```").block();
+            return -1;
+        }
+        List<Queue> queues;
+        try {
+            if (args.length < 4) throw new InputError("Expected queues argument");
+            queues = MyMessage.parseQueues(args[3]);
+        } catch (InputError e) {
+            message.getChannel().block().createMessage("```"+e.error+"```").block();
+            return -1;
+        }
         var resp = MyMessage.stalk(sum, gamesTogether, queues);
         StringBuilder sb = new StringBuilder();
         sb.append(resp);

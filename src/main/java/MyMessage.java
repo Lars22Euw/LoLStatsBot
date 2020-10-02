@@ -238,9 +238,15 @@ class MyMessage {
 
         StringBuilder output = new StringBuilder("Games for " + sum.getName() + " with at least " + gamesTogether + " games together:\n");
         MatchHistory games;
-        if (queues == null || queues.size() == 0)
-             games = MatchHistory.forSummoner(sum).withEndIndex(70).get();
-        else games = MatchHistory.forSummoner(sum).withQueues(queues).withEndIndex(70).get();
+        if (queues == null || queues.size() == 0) {
+            games = MatchHistory.forSummoner(sum).withEndIndex(70).get();
+            output.append("All Queues\n");
+        } else {
+            games = MatchHistory.forSummoner(sum).withQueues(queues).withEndIndex(70).get();
+            output.append("Queues: ");
+            queues.forEach(q -> output.append(q.name()+", "));
+            output.append("\n");
+        }
 
         var gamesFiltered = Player.lookup(games, sum).entrySet().stream().
                 filter(e -> e.getValue().games > gamesTogether).
