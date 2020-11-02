@@ -1,12 +1,17 @@
 import com.merakianalytics.orianna.types.common.Queue;
+import com.merakianalytics.orianna.types.core.staticdata.Champion;
 import com.merakianalytics.orianna.types.core.summoner.Summoner;
 import discord4j.core.*;
 import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.object.entity.Message;
 import discord4j.core.object.util.Snowflake;
 import discord4j.core.spec.EmbedCreateSpec;
+import org.joda.time.DateTime;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.NoSuchElementException;
+import java.util.SortedSet;
 import java.util.function.Consumer;
 
 public class Bot {
@@ -82,21 +87,130 @@ public class Bot {
         return new MyMessage(manager).clash(input);
     }
 
-    private Integer matches(Message message) {
-        var resp = message(message);
+    private Integer matches(Message message) throws NoSuchElementException {
+        if (manager == null) System.out.println("manager is null");
+        var msgText = message.getContent().orElseThrow();
+
+        var tokens = msgText.trim().split(" ");
+        if (tokens.length < 2) {
+            message.getChannel().block().createMessage("Summoner argument expected.\n").block();
+            return -1;
+        }
+
+        boolean startTimeSet = false;
+        List<Queue> queues = new ArrayList<>();
+        List<Champion> champions = new ArrayList<>();
+        List<Summoner> summoners;
+
+        try {
+            summoners = new ArrayList<>(MyMessage.parseSummoners(tokens[1]));
+        } catch (InputError e) {
+            message.getChannel().block().createMessage(e.error).block();
+            return -1;
+        }
+
+
+        DateTime startDate = DateTime.now();
+        for (int index = 2; index+1 < tokens.length; index++) {
+            try {
+                switch (tokens[index]) {
+                    default: {
+                        System.out.println("unexpected token:");
+                        message.getChannel().block().createMessage("unexpected Token at index: "+index+" "+tokens[index]).block();
+                        return -1;
+                    }
+                    case "-t": { // with TIME
+                        index++;
+                        startDate = MyMessage.parseTime(tokens[index]);
+                        startTimeSet = true;
+                        break;
+                    }
+                    case "-w": { // with SUMMONER
+                        index++;
+                        summoners.addAll(MyMessage.parseSummoners(tokens[index]));
+                        break;
+                    }
+                    case "-c": { // with CHAMPION
+                        index++;
+                        champions.addAll(MyMessage.parseChamps(tokens[index]));
+                        break;
+                    }
+                    case "-q": { // with QUEUE
+                        index++;
+                        queues.addAll(MyMessage.parseQueues(tokens[index]));
+                        break;
+                    }
+                }
+            } catch (InputError e) {
+                System.out.println("End of caught error.");
+                message.getChannel().block().createMessage(e.error).block();
+                return -1;
+            }
+        }
+
+        if (startDate == null || !startTimeSet) {
+            startDate = MyMessage.getDateMinus(MyMessage.MONTHS_IN_THE_PAST, 1);
+        }
+        var endDate = DateTime.now();
+        System.out.printf("Args: sums %d champs %d queues %d " +
+                        "%n Start: "+Util.dtf.print(startDate)+
+                        "%n End: "+Util.dtf.print(endDate) + "%n",
+                summoners.size(), champions.size(), queues.size());
+
+        var myMessage = new MyMessage(manager);
+        SortedSet<Game> matches = manager.gamesWith(summoners, champions, queues, startDate, endDate);
+        if (matches == null || matches.size() == 0) {
+            System.out.println("wtf. No games found");
+            message.getChannel().block().createMessage("No games found.\n").block();
+            return -1;
+        }
+
+        myMessage.sb.append(MyMessage.stringOf(matches));
+        var resp = myMessage.build();
         if (resp == null || resp.length == 0) {
             System.out.println("Empty msg");
+            return -1;
         }
         StringBuilder sb = new StringBuilder();
         for (var line: resp) {
-            if (sb.length() > 1900) {
-                message.getChannel().block().createMessage("LoL matches per day:" +"```"+sb.toString()+"```").block();
-                sb = new StringBuilder();
-            }
             sb.append(line).append("\n");
         }
-        message.getChannel().block().createMessage("```"+sb.toString()+"```").block();
+        StringBuilder title = buildTitle("Matches for:", summoners, queues, champions, startTimeSet, startDate);
+
+        message.getChannel().block().createMessage(title+"```"+sb.toString()+"```").block();
         return 0;
+    }
+
+    StringBuilder buildTitle(String start, List<Summoner> summoners, List<Queue> queues, List<Champion> champions, boolean startTimeSet, DateTime startDate) {
+        var title = new StringBuilder(start);
+
+        if (summoners.size() > 0) {
+            title.append(" [summoners:");
+            for (var s: summoners) {
+                var sum = Summoner.withAccountId(s.getAccountId()).get();
+
+                title.append(" ").append(sum.getName());
+            }
+            title.append("] ");
+        }
+
+
+        if (queues.size() > 0) {
+            title.append(" [queues:");
+            for (var q: queues) title.append(" ").append(q.name());
+            title.append("] ");
+        } else title.append(" [all queues]");
+
+        if (champions.size() > 0) {
+            title.append(" [champs:");
+            for (var c: champions) title.append(" ").append(c.getName());
+            title.append(" ]");
+        } else title.append(" [all champs]");
+
+        if (startTimeSet) {
+            title.append(" [time: ").append(startDate).append("]");
+        }
+        return title;
     }
 
     private Integer help(Message m) {
@@ -168,12 +282,6 @@ public class Bot {
     Bot(String riotAPI, String discordAPI) {
         manager = new Manager(riotAPI);
         client = new DiscordClientBuilder(discordAPI).build();
-    }
-
-    private String[] message(Message message) {
-        if (manager == null) System.out.println("manager is null");
-        var msgText = message.getContent().orElseThrow();
-        return new MyMessage(msgText, manager).build();
     }
 
     public static void main(String[] args) {

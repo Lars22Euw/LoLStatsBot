@@ -20,8 +20,8 @@ import static java.util.Map.*;
 class MyMessage {
 
     private Manager manager;
-    private StringBuilder sb = new StringBuilder();
-    private static final int MONTHS_IN_THE_PAST = 3;
+    StringBuilder sb = new StringBuilder();
+    static final int MONTHS_IN_THE_PAST = 3;
 
     private static Map<String, String> names = new HashMap<>();
     static {
@@ -79,90 +79,6 @@ class MyMessage {
                 .toLowerCase().trim();
     }
 
-    MyMessage(String command_input, Manager manager) {
-        this.manager = manager;
-
-        var tokens = command_input.trim().split(" ");
-        if (tokens.length < 2) {
-            sb.append("Expected at least one summoner analyse.\n");
-            return;
-        }
-
-        boolean startTimeSet = false;
-
-        List<Queue> queues = new ArrayList<>();
-        List<Champion> champions = new ArrayList<>();
-        List<Summoner> summoners;
-
-        try {
-            summoners = new ArrayList<>(parseSummoners(tokens[1]));
-        } catch (InputError e) {
-            sb.append(e.error);
-            return;
-        }
-
-        DateTime startDate = DateTime.now();
-        for (int index = 2; index < tokens.length; index++) {
-            try {
-                switch (tokens[index]) {
-                    default: {
-                        // TODO:
-                        System.out.println("unexpected token:");
-                        sb.append("unexpected Token at index: ").append(index).append(" ").append(tokens[index]);
-                        break;
-                    }
-                    case "-t": {
-                        index++;
-                        if (index >= tokens.length) break;
-                        startDate = parseTime(tokens[index]);
-                        startTimeSet = true;
-                        break;
-                    }
-                    case "-w": { // with SUMMONER
-                        index++;
-                        if (index >= tokens.length) break;
-                        summoners.addAll(parseSummoners(tokens[index]));
-                        break;
-                    }
-                    case "-c": { // with CHAMPION
-                        index++;
-                        if (index >= tokens.length) break;
-                        champions.addAll(parseChamps(tokens[index]));
-                        break;
-                    }
-                    case "-q": { // with QUEUE
-                        index++;
-                        if (index >= tokens.length) break;
-                        queues.addAll(parseQueues(tokens[index]));
-                        break;
-                    }
-                }
-            } catch (InputError e) {
-                sb.append(e.error);
-                System.out.println("End of caught error.");
-                return;
-            }
-        }
-
-        if (startDate == null || !startTimeSet) {
-            startDate = getDateMinus(MONTHS_IN_THE_PAST, 1);
-        }
-
-
-        DateTime endDate = DateTime.now();
-        System.out.println("Args: sums champs queues "+summoners.size()+" "+champions.size()+" "+queues.size()+
-                "\nStart: "+ Util.dtf.print(startDate)+
-                "\nEnd:   "+ Util.dtf.print(endDate));
-
-        SortedSet<Game> matches = manager.gamesWith(summoners, champions, queues, startDate, endDate);
-        if (matches == null || matches.size() == 0) {
-            System.out.println("wtf. No games found");
-            sb.append("No games found.\n");
-            return;
-        }
-        sb.append(stringOf(matches));
-    }
-
     public MyMessage(Manager manager) {
         this.manager = manager;
     }
@@ -193,7 +109,7 @@ class MyMessage {
         return result;
     }
 
-    private static List<Champion> parseChamps(String token) throws InputError {
+    static List<Champion> parseChamps(String token) throws InputError {
         var result = new ArrayList<Champion>();
         for (var c: token.split(",")) {
             c = cleanIt(c);
@@ -234,6 +150,22 @@ class MyMessage {
         return result;
     }
 
+    static DateTime parseTime(String s) {
+        if (s.endsWith("m")) {
+            DateTime date;
+            try {
+                String sub = s.substring(0, s.length()-1);
+                date = getDateMinus(Integer.parseInt(sub), 6);
+                System.out.println("Parsed "+Util.dtf.print(date));
+                return date;
+            } catch (Exception e) {
+                e.printStackTrace();
+                throw new InputError("Input was not a number.\n");
+            }
+        }
+        return null;
+    }
+
     public static String stalk(Summoner sum, int gamesTogether, List<Queue> queues) {
 
         StringBuilder output = new StringBuilder("Games for " + sum.getName() + " with at least " + gamesTogether + " games together:\n");
@@ -261,21 +193,6 @@ class MyMessage {
         return output.toString();
     }
 
-    private DateTime parseTime(String s) {
-        if (s.endsWith("m")) {
-            DateTime date;
-            try {
-                String sub = s.substring(0, s.length()-1);
-                date = getDateMinus(Integer.parseInt(sub), 6);
-                System.out.println("Parsed "+Util.dtf.print(date));
-                return date;
-            } catch (Exception e) {
-                e.printStackTrace();
-                throw new InputError("Input was not a number.\n");
-            }
-        }
-        return null;
-    }
 
     /**
      * Returns the date from now - monthDelta with weekday = day
@@ -283,7 +200,7 @@ class MyMessage {
      * @param day day of week the date is set to
      * @return Date.now() - monthDelta and weekday = day
      */
-    private DateTime getDateMinus(int monthDelta, int day) {
+    static DateTime getDateMinus(int monthDelta, int day) {
         var time = DateTime.now();
         int x = time.getMonthOfYear() - monthDelta;
         if (x < 0) {
@@ -294,7 +211,7 @@ class MyMessage {
         return time2.withDayOfWeek(day);
     }
 
-    private DateTime getMonday(Day[] week) {
+    private static DateTime getMonday(Day[] week) {
         DateTime result = DateTime.now();
         for (Day d: week) {
             if (d == null || d.matches == null || d.matches.size() == 0)
@@ -304,7 +221,7 @@ class MyMessage {
         return result.withDayOfWeek(6);
     }
 
-    private String weeksToString(List<Day[]> weeks) {
+    private static String[] weeksToString(List<Day[]> weeks) {
         final var days = List.of("Mo", "Tu", "We", "Th", "Fr", "Sa", "Su");
         var sbInfo = new StringBuilder();
         var sbSum = new StringBuilder();
@@ -358,15 +275,16 @@ class MyMessage {
                 sbInfo.append(c);
             }
         }
-        var result = new StringBuilder();
-        result.append(sbInfo.toString()).append("\n");
-        for (var sbN : dailySBs)
-            result.append(sbN.toString()).append("\n");
-        result.append(sbSum.toString()).append("\n");
-        return result.toString();
+
+        String[] res = new String[9];
+        res[0] = sbInfo.toString();
+        for (int n = 0; n < dailySBs.size(); n++)
+            res[n+1] = dailySBs.get(n).toString();
+        res[8] = sbSum.toString();
+        return res;
     }
 
-    private String asString() {
+    static String asString() {
         return asString("", 4);
     }
 
@@ -380,20 +298,21 @@ class MyMessage {
     }
 
     /**
-     * Takes a set of games and returns their string presentation
+     * Takes a set of games and returns their string representation
      * @param games a Set of Games to be displayed
      * @return the string representation
      */
-    private String stringOf(SortedSet<Game> games) {
+    static String stringOf(SortedSet<Game> games) {
         var sb = new StringBuilder();
         List<Day[]> weeks = Manager.gamesByWeek(games);
-        sb.append(weeksToString(weeks));
-
-        var avg = Manager.totalGamesPerDay(games);
-        for (var a: avg) {
-            sb.append(asString(a, 4));
+        var lines = weeksToString(weeks);
+        var avgs = Manager.totalGamesPerDay(games);
+        sb.append(lines[0]).append("\n");
+        for (int i = 0; i < avgs.length; i++) {
+            var avg = asString(avgs[i], 4);
+            sb.append(lines[1+i]).append(avg).append("\n");
         }
-        sb.append("\n");
+        sb.append(lines[8]).append("\n");
         return sb.toString();
     }
 
