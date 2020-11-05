@@ -143,7 +143,7 @@ public class Manager {
      */
     static List<Day[]> gamesByWeek(SortedSet<Game> matches) {
         SortedSet<Day> days = Manager.gamesPerDay(matches);
-        System.out.println(days.last().time.toString());
+        //"yyyy.MM.dd HH:mm"System.out.println(Util.dtf.print(days.last().time));
 
         Day[] week = new Day[7];
         List<Day[]> listOfWeeks = new ArrayList<>();

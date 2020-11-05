@@ -64,14 +64,14 @@ public class ClashPlayer extends Player {
 
     private String makeReason(double displayValue) {
         displayValue /= 1000;
-        String result = MyMessage.asString(name, SUMMONER_NAME_SIZE) + ": mastery (";
+        String result = Util.asString(name, SUMMONER_NAME_SIZE) + ": mastery (";
         if ((displayValue / 1000) >= 1) result += (int) (displayValue/1000) + "m)";
         else result += (int) displayValue + "k)";
         return  result;
     }
 
     private String makeReason2(double score) {
-        String result = MyMessage.asString(name, SUMMONER_NAME_SIZE) + ": recency (";
+        String result = Util.asString(name, SUMMONER_NAME_SIZE) + ": recency (";
         result += (int) (score * 1.5 + 1) + ")";
         return result;
     }

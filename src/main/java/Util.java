@@ -12,7 +12,8 @@ import java.util.List;
 
 public class Util {
 
-    public static DateTimeFormatter dtf = DateTimeFormat.forPattern("EE yyyy'-'MM'-'dd' 'HH':'mm");
+    String a = "dd.MM.yyyy";
+    public static DateTimeFormatter dtf = DateTimeFormat.forPattern("yyyy.MM.dd HH:mm");
 
     public static Team getTeam(Summoner summoner, Match match) {
         return match.getBlueTeam().getParticipants().contains(summoner) ?
@@ -24,5 +25,18 @@ public class Util {
         final SearchableList<Participant> participants = getTeam(summoner, match).getParticipants();
         participants.forEach(p -> result.add(p.getSummoner()));
         return result;
+    }
+
+    public static String asString() {
+        return asString("", 4);
+    }
+
+    public static String asString(Object a, final int size) {
+        if (a == null) a = "";
+        String result = a.toString();
+        while (result.length() < size) {
+            result += " ";
+        }
+        return result.substring(0, size);
     }
 }

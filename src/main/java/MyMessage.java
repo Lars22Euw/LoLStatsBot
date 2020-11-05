@@ -88,6 +88,7 @@ class MyMessage {
         for (var q: token.split(",")) {
             try {
                 final String queueName = q.toUpperCase();
+                if (queueName.equals("ALL") || queueName.equals("*")) return null;
                 if (queueName.equals("SR")) {
                     result.addAll(List.of(Queue.NORMAL, Queue.CLASH, Queue.CUSTOM, Queue.BLIND_PICK));
                     result.addAll(Queue.RANKED);
@@ -184,12 +185,42 @@ class MyMessage {
                 filter(e -> e.getValue().games > gamesTogether).
                 sorted(Entry.comparingByValue()).
                 collect(Collectors.toCollection(ArrayList::new));
+        var champsFiltered = Player.lookupChamps(games, sum).entrySet().stream().
+                filter(e -> e.getValue().games > gamesTogether).
+                sorted(Entry.comparingByValue()).
+                collect(Collectors.toCollection(ArrayList::new));
+
+        final String d2 = "%02d";
+        final String f5_1 = "%05.1f";
+
+
+        String[] resPlayer = new String[gamesFiltered.size()];
         for (int i = 1; i < gamesFiltered.size() && i < 11; i++) {
             var entry = gamesFiltered.get(gamesFiltered.size() -i);
             var name = Summoner.withId(entry.getKey()).get().getName();
-            output.append(entry.getValue().wins + "/" + entry.getValue().games + "\t" + name + "\n");
+            var wins = entry.getValue().wins;
+            var total = entry.getValue().games;
+            double p = wins / (double) total * 100;
+            resPlayer[i] = String.format(d2 +"/" + d2 + "  " + f5_1 + "  %-16s", wins, total, p, name);
         }
 
+        String[] resChamps = new String[champsFiltered.size()];
+        for (var i = 1; i < champsFiltered.size() & i < 11; i++) {
+            var entry = champsFiltered.get(champsFiltered.size()-i);
+            var name = Champion.withId(entry.getKey()).get().getName();
+            var wins = entry.getValue().wins;
+            var total = entry.getValue().games;
+            var p = wins / (double) total * 100;
+            resChamps[i] = String.format(d2+"/"+d2+"  "+f5_1+"  %-16s", wins, total, p, name);
+        }
+
+        var len = Math.max(Math.min(gamesFiltered.size(), 11), Math.min(champsFiltered.size(), 11));
+        String[] res = new String[len-2];
+        for (int i = 0; i < res.length; i++) {
+            String s = (i+1 < resPlayer.length) ? resPlayer[i+1] : String.format("%-29s", "");
+            res[i] = (i+1 < resChamps.length) ? s + " | " + resChamps[i+1] +"\n" : s + "\n";
+        }
+        for (var s: res) output.append(s);
         return output.toString();
     }
 
@@ -240,10 +271,10 @@ class MyMessage {
             if (week == null) {
                 // TODO: add empty collum to each sb
                 for (var sb: dailySBs) {
-                    sb.append(asString());
+                    sb.append(Util.asString());
                 }
-                sbInfo.append(asString());
-                sbSum.append(asString());
+                sbInfo.append(Util.asString());
+                sbSum.append(Util.asString());
                 continue;
             }
             int c = 0;
@@ -251,14 +282,14 @@ class MyMessage {
                 var day = week[i];
 
                 if (day == null) {
-                    dailySBs.get(i).append(asString());
+                    dailySBs.get(i).append(Util.asString());
                     continue;
                 }
                 int tmp = day.matches.size();
                 if (tmp == 0) {
-                    dailySBs.get(i).append(asString());
+                    dailySBs.get(i).append(Util.asString());
                 } else {
-                    dailySBs.get(i).append(asString(tmp, 4));
+                    dailySBs.get(i).append(Util.asString(tmp, 4));
                 }
                 c += tmp;
             }
@@ -268,8 +299,8 @@ class MyMessage {
                 //"KW " +
                 //time.toString(DATE_PATTERN);
                 String date = time.getWeekOfWeekyear() + " "; //+ time.yearOfCentury().get();
-                sbInfo.append(asString(date, 4));
-                sbSum.append(asString(c, 4));
+                sbInfo.append(Util.asString(date, 4));
+                sbSum.append(Util.asString(c, 4));
                 time = time.plusWeeks(1);
             } catch (Exception e) {
                 sbInfo.append(c);
@@ -277,24 +308,11 @@ class MyMessage {
         }
 
         String[] res = new String[9];
-        res[0] = sbInfo.toString();
+        res[0] = sbInfo.toString().concat("Sum");
         for (int n = 0; n < dailySBs.size(); n++)
             res[n+1] = dailySBs.get(n).toString();
         res[8] = sbSum.toString();
         return res;
-    }
-
-    static String asString() {
-        return asString("", 4);
-    }
-
-    public static String asString(Object a, final int size) {
-        if (a == null) a = "";
-        String result = a.toString();
-        while (result.length() < size) {
-            result += " ";
-        }
-        return result.substring(0, size);
     }
 
     /**
@@ -309,7 +327,7 @@ class MyMessage {
         var avgs = Manager.totalGamesPerDay(games);
         sb.append(lines[0]).append("\n");
         for (int i = 0; i < avgs.length; i++) {
-            var avg = asString(avgs[i], 4);
+            var avg = Util.asString(avgs[i], 4);
             sb.append(lines[1+i]).append(avg).append("\n");
         }
         sb.append(lines[8]).append("\n");

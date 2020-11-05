@@ -131,7 +131,7 @@ public class Player {
         return result;
     }
 
-     HashMap<Integer, Pair> lookupChamps(List<Match> games) {
+     static HashMap<Integer, Pair> lookupChamps(List<Match> games, Summoner summoner) {
         var gamesWon = new HashMap<Integer, Pair>();
         for (var game: games) {
             var p = game.getParticipants().find(pa -> pa.getSummoner().equals(summoner));
@@ -187,7 +187,8 @@ public class Player {
             var name = Summoner.withId(entry.getKey()).get().getName();
             System.out.println(name + " " + entry.getValue().wins + "/" + entry.getValue().games);
         }
-        System.out.println("Total wins: "+games.get(summoner.getAccountId()).wins + " from "+games.get(summoner.getAccountId()).games);
+        System.out.println("Total wins: "+games.get(summoner.getAccountId()).wins +
+                " from "+games.get(summoner.getAccountId()).games);
     }
 
     public static void main(String[] args) {

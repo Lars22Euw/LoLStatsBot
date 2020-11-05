@@ -43,14 +43,14 @@ public class ClashBan implements Comparable<ClashBan> {
 
     @Override
     public String toString() {
-        String champ = MyMessage.asString(champion.getName(), 16);
+        String champ = Util.asString(champion.getName(), 16);
         StringBuilder sb = new StringBuilder();
         sb.append("[");
 
         for (int i = 0; i < reasons.size(); i++) {
             String a = reasons.get(i).toString();
             if (i+1 < reasons.size()) a += ", ";
-            var message = MyMessage.asString(a, Reason.longestReason);
+            var message = Util.asString(a, Reason.longestReason);
             sb.append(message);
         }
         sb.append("]");

@@ -116,28 +116,24 @@ public class Bot {
                 switch (tokens[index]) {
                     default: {
                         System.out.println("unexpected token:");
-                        message.getChannel().block().createMessage("unexpected Token at index: "+index+" "+tokens[index]).block();
+                        message.getChannel().block().createMessage("Unexpected Token at index: "+index+" "+tokens[index]).block();
                         return -1;
                     }
                     case "-t": { // with TIME
-                        index++;
-                        startDate = MyMessage.parseTime(tokens[index]);
+                        startDate = MyMessage.parseTime(tokens[++index]);
                         startTimeSet = true;
                         break;
                     }
                     case "-w": { // with SUMMONER
-                        index++;
-                        summoners.addAll(MyMessage.parseSummoners(tokens[index]));
+                        summoners.addAll(MyMessage.parseSummoners(tokens[++index]));
                         break;
                     }
                     case "-c": { // with CHAMPION
-                        index++;
-                        champions.addAll(MyMessage.parseChamps(tokens[index]));
+                        champions.addAll(MyMessage.parseChamps(tokens[++index]));
                         break;
                     }
                     case "-q": { // with QUEUE
-                        index++;
-                        queues.addAll(MyMessage.parseQueues(tokens[index]));
+                        queues.addAll(MyMessage.parseQueues(tokens[++index]));
                         break;
                     }
                 }
@@ -181,7 +177,9 @@ public class Bot {
         return 0;
     }
 
-    StringBuilder buildTitle(String start, List<Summoner> summoners, List<Queue> queues, List<Champion> champions, boolean startTimeSet, DateTime startDate) {
+    StringBuilder buildTitle(String start, List<Summoner> summoners, List<Queue> queues, List<Champion> champions,
+                             boolean startTimeSet, DateTime startDate) {
+
         var title = new StringBuilder(start);
 
         if (summoners.size() > 0) {
@@ -208,7 +206,7 @@ public class Bot {
         } else title.append(" [all champs]");
 
         if (startTimeSet) {
-            title.append(" [time: ").append(startDate).append("]");
+            title.append(" [time: ").append(Util.dtf.print(startDate)).append("]");
         }
         return title;
     }
