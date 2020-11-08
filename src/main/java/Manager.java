@@ -1,6 +1,8 @@
 import com.merakianalytics.orianna.Orianna;
 import com.merakianalytics.orianna.types.common.Queue;
 import com.merakianalytics.orianna.types.common.Region;
+import com.merakianalytics.orianna.types.core.match.Match;
+import com.merakianalytics.orianna.types.core.match.Matches;
 import com.merakianalytics.orianna.types.core.staticdata.Champion;
 import com.merakianalytics.orianna.types.core.summoner.Summoner;
 import org.joda.time.DateTime;
@@ -8,6 +10,7 @@ import org.joda.time.DateTime;
 import java.io.*;
 import java.util.*;
 
+import static com.merakianalytics.orianna.types.core.match.MatchHistories.forSummoners;
 import static com.merakianalytics.orianna.types.core.match.MatchHistory.*;
 
 public class Manager {
@@ -287,100 +290,53 @@ public class Manager {
         return edges;
     }
 
-    SortedSet<Game> withQueues(List<Queue> queues, SortedSet<Game> matches) {
-        if (queues == null || queues.size() == 0) return matches;
-        SortedSet<Game> result = new TreeSet<>(Game::compare2);
-        for (var game : matches)
-            for (var q : queues) {
-                if (game.queue.equalsIgnoreCase(q.name()))
-                    result.add(game);
+    public SortedSet<Game> gamesWith(final List<Summoner> summoners, List<Champion> champions,
+                                     List<Queue> queues, DateTime startDate, DateTime endDate) {
+        if (summoners.size() == 0) return new TreeSet<>();
+
+        var histories= forSummoners(summoners)
+                .withChampions(champions)
+                .withQueues(queues)
+                .withStartTime(startDate)
+                .withEndTime(endDate).get();
+
+        HashSet<Long> ids = new HashSet<>();
+        List<Match> matches = new ArrayList<>();
+
+        for (Match match : histories.get(0)) {
+            matches.add(match);
+            ids.add(match.getId());
+        }
+
+        for (var h: histories) {
+            var newMatches = new ArrayList<Match>();
+            var newIds = new HashSet<Long>();
+            for (var game: h) {
+                final long id = game.getId();
+                if (ids.contains(id)) {
+                    newIds.add(id);
+                    newMatches.add(game);
+                }
             }
-        return result;
-    }
-
-    static SortedSet<Game> gamesSince(DateTime date, SortedSet<Game> matches) {
-        if (date == null || date.equals(DateTime.now())) return matches;
-        SortedSet<Game> m2 = new TreeSet<>(Game::compare2);
-        for (Game game: matches) {
-            if (game.time.isAfter(date))
-                m2.add(game);
+            matches = newMatches;
+            ids = newIds;
         }
-        return m2;
-    }
 
-    static SortedSet<Game> gamesBefore(DateTime date, SortedSet<Game> matches) {
-        if (date == null || date.equals(DateTime.now())) return matches;
-        SortedSet<Game> m2 = new TreeSet<>(Game::compare2);
-        for (Game game: matches) {
-            if (game.time.isBefore(date))
-                m2.add(game);
-        }
-        return m2;
-    }
-
-    SortedSet<Game> gamesWith(List<Champion> champions, Summoner summoner) {
-        SortedSet<Game> matches = new TreeSet<>(Game::compare2);
-        if (champions == null || champions.size() == 0) {
-            return new Player(summoner, this).matches;
-        }
-        for (var champ: champions) {
-            for (var m: forSummoner(summoner).withChampions(champ).get()) {
-                matches.add(new Game(m));
-            }
-        }
-        return matches;
-    }
-
-    public SortedSet<Game> gamesWith(List<Summoner> summoners, List<Champion> champions, List<Queue> queues, DateTime startDate, DateTime endDate) {
         SortedSet<Game> result = new TreeSet<>(Game::compare2);
-
-        if (summoners == null || summoners.size() == 0) return result;
-        result = gamesWith(champions, summoners.remove(0));
-
-        if (summoners.size() >= 1) {
-            result = gamesWithPlayers(summoners, champions, result);
+        for (var m: matches) {
+            result.add(new Game(m));
         }
-
-        result = Manager.gamesSince(startDate, result);
-        result = Manager.gamesBefore(endDate, result);
-        result = withQueues(queues, result);
 
         return result;
     }
 
-    /**
-     * takes a list of summoners, where all their games with the same id as the given matches list will be returned
-     * @param summoners list of summoners to compare with
-     * @param champions
-     * @param matches
-     * @return games played together by all players.
-     */
-    private SortedSet<Game> gamesWithPlayers(List<Summoner> summoners, List<Champion> champions, SortedSet<Game> matches) {
-        if (summoners == null || summoners.size() == 0) return matches;
-
-        SortedSet<Long> ids = new TreeSet();
-        for (var game: matches) {
-            ids.add(game.id);
-        }
-        SortedSet<Game> gamesTogether = new TreeSet();
-        System.out.println("Games together:"+ids.size());
-
-        //ids.forEach(System.out::println);
-
-        for (var game: gamesWith(champions, summoners.remove(0))) {
-            if(ids.contains(game.id)) {
-                gamesTogether.add(game);
-            }
-        }
-        return gamesWithPlayers(summoners, champions, gamesTogether);
-    }
 
     public String[] doStuffWithClash(List<Summoner> summoners) {
         var clashPlayers = new ArrayList<ClashPlayer>();
         for (var s : summoners) {
             clashPlayers.add(new ClashPlayer(s));
         }
-        var clashTeam = new ClashTeam(clashPlayers, "FPX"); // I like it.
+        var clashTeam = new ClashTeam(clashPlayers, "FPX");
         return clashTeam.bans();
     }
 

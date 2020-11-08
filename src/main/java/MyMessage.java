@@ -88,7 +88,10 @@ class MyMessage {
         for (var q: token.split(",")) {
             try {
                 final String queueName = q.toUpperCase();
-                if (queueName.equals("ALL") || queueName.equals("*")) return null;
+                if (queueName.equals("ALL") || queueName.equals("*")) {
+                    System.out.println("Parsed all Queues");
+                    return null;
+                }
                 if (queueName.equals("SR")) {
                     result.addAll(List.of(Queue.NORMAL, Queue.CLASH, Queue.CUSTOM, Queue.BLIND_PICK));
                     result.addAll(Queue.RANKED);
@@ -168,17 +171,13 @@ class MyMessage {
     }
 
     public static String stalk(Summoner sum, int gamesTogether, List<Queue> queues) {
-
-        StringBuilder output = new StringBuilder("Games for " + sum.getName() + " with at least " + gamesTogether + " games together:\n");
+        StringBuilder output = new StringBuilder();
         MatchHistory games;
+        final int historySize = 50;
         if (queues == null || queues.size() == 0) {
-            games = MatchHistory.forSummoner(sum).withEndIndex(70).get();
-            output.append("All Queues\n");
+            games = MatchHistory.forSummoner(sum).withEndIndex(historySize).get();
         } else {
-            games = MatchHistory.forSummoner(sum).withQueues(queues).withEndIndex(70).get();
-            output.append("Queues: ");
-            queues.forEach(q -> output.append(q.name()+", "));
-            output.append("\n");
+            games = MatchHistory.forSummoner(sum).withQueues(queues).withEndIndex(historySize).get();
         }
 
         var gamesFiltered = Player.lookup(games, sum).entrySet().stream().
@@ -191,7 +190,7 @@ class MyMessage {
                 collect(Collectors.toCollection(ArrayList::new));
 
         final String d2 = "%02d";
-        final String f5_1 = "%05.1f";
+        final String f3_0 = "%3.0f%%";
 
 
         String[] resPlayer = new String[gamesFiltered.size()];
@@ -201,7 +200,7 @@ class MyMessage {
             var wins = entry.getValue().wins;
             var total = entry.getValue().games;
             double p = wins / (double) total * 100;
-            resPlayer[i] = String.format(d2 +"/" + d2 + "  " + f5_1 + "  %-16s", wins, total, p, name);
+            resPlayer[i] = String.format(d2 +"/" + d2 + "  " + f3_0 + "  %-16s", wins, total, p, name);
         }
 
         String[] resChamps = new String[champsFiltered.size()];
@@ -211,7 +210,7 @@ class MyMessage {
             var wins = entry.getValue().wins;
             var total = entry.getValue().games;
             var p = wins / (double) total * 100;
-            resChamps[i] = String.format(d2+"/"+d2+"  "+f5_1+"  %-16s", wins, total, p, name);
+            resChamps[i] = String.format(d2+"/"+d2+"  "+f3_0+"  %-16s", wins, total, p, name);
         }
 
         var len = Math.max(Math.min(gamesFiltered.size(), 11), Math.min(champsFiltered.size(), 11));

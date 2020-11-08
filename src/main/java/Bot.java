@@ -7,6 +7,7 @@ import discord4j.core.object.entity.Message;
 import discord4j.core.object.util.Snowflake;
 import discord4j.core.spec.EmbedCreateSpec;
 import org.joda.time.DateTime;
+import org.joda.time.format.DateTimeFormat;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -61,10 +62,12 @@ public class Bot {
             return -1;
         }
         var resp = MyMessage.stalk(sum, gamesTogether, queues);
-        StringBuilder sb = new StringBuilder();
-        sb.append(resp);
+        StringBuilder sb = new StringBuilder(resp);
+
+        var title = buildTitle("Stalk for: ", List.of(sum), queues, null, null);
+
         System.out.println("Stalk: "+sb.toString());
-        message.getChannel().block().createMessage("```" + sb.toString() + "```").block();
+        message.getChannel().block().createMessage(title + "```" + sb.toString() + "```").block();
         return 0;
     }
 
@@ -133,7 +136,9 @@ public class Bot {
                         break;
                     }
                     case "-q": { // with QUEUE
-                        queues.addAll(MyMessage.parseQueues(tokens[++index]));
+                        var qs = MyMessage.parseQueues(tokens[++index]);
+                        if (qs != null && qs.get(0) != null)
+                            queues = new ArrayList<>(qs);
                         break;
                     }
                 }
@@ -153,14 +158,17 @@ public class Bot {
                         "%n End: "+Util.dtf.print(endDate) + "%n",
                 summoners.size(), champions.size(), queues.size());
 
-        var myMessage = new MyMessage(manager);
+
+        assert manager != null;
         SortedSet<Game> matches = manager.gamesWith(summoners, champions, queues, startDate, endDate);
+
         if (matches == null || matches.size() == 0) {
             System.out.println("wtf. No games found");
             message.getChannel().block().createMessage("No games found.\n").block();
             return -1;
         }
 
+        var myMessage = new MyMessage(manager);
         myMessage.sb.append(MyMessage.stringOf(matches));
         var resp = myMessage.build();
         if (resp == null || resp.length == 0) {
@@ -171,42 +179,40 @@ public class Bot {
         for (var line: resp) {
             sb.append(line).append("\n");
         }
-        StringBuilder title = buildTitle("Matches for:", summoners, queues, champions, startTimeSet, startDate);
+        StringBuilder title = buildTitle("Matches for:", summoners, queues, champions, startDate);
 
         message.getChannel().block().createMessage(title+"```"+sb.toString()+"```").block();
         return 0;
     }
 
     StringBuilder buildTitle(String start, List<Summoner> summoners, List<Queue> queues, List<Champion> champions,
-                             boolean startTimeSet, DateTime startDate) {
-
+                             DateTime startDate) {
         var title = new StringBuilder(start);
 
         if (summoners.size() > 0) {
             title.append(" [summoners:");
             for (var s: summoners) {
-                var sum = Summoner.withAccountId(s.getAccountId()).get();
-
-                title.append(" ").append(sum.getName());
+                title.append(", ").append(s.getName());
             }
             title.append("] ");
         }
 
 
-        if (queues.size() > 0) {
+        if (queues != null && queues.size() > 0) {
             title.append(" [queues:");
-            for (var q: queues) title.append(" ").append(q.name());
+            for (var q: queues) title.append(", ").append(q.name());
             title.append("] ");
         } else title.append(" [all queues]");
 
-        if (champions.size() > 0) {
+        if (champions != null && champions.size() > 0) {
             title.append(" [champs:");
-            for (var c: champions) title.append(" ").append(c.getName());
+            for (var c: champions) title.append(", ").append(c.getName());
             title.append(" ]");
         } else title.append(" [all champs]");
 
-        if (startTimeSet) {
-            title.append(" [time: ").append(Util.dtf.print(startDate)).append("]");
+        if (startDate != null) {
+            var form = DateTimeFormat.forPattern("dd.MM.yyyy");
+            title.append(" [start: ").append(form.print(startDate)).append("]");
         }
         return title;
     }
@@ -234,9 +240,10 @@ public class Bot {
                 };
                 messageSpec.setEmbed(setEmbed(".s .stalk",
                         "`.s SUM MIN QUEUES`\n" +
-                                "`.sum Lars 2 CLASH`\n"+
+                                "`.stalk Lars 2 CLASH`\n"+
                                 "From last 70 games with MIN games together in given queues\n" +
-                                "SR = summoners rift: blind, clash, custom, normal, ranked", fields));
+                                "`*` or `ALL` lists all queues\n" +
+                                "`SR` = summoners rift: blind, clash, custom, normal, ranked", fields));
             }).block();
         } else if (m.getContent().get().toLowerCase().contains("clash")) {
             messageChannel.createMessage(messageSpec -> {
