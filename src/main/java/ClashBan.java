@@ -73,6 +73,7 @@ public class ClashBan implements Comparable<ClashBan> {
         var result = new ArrayList<ClashBan>();
         for (var champ: Champions.get()) {
             result.add(new ClashBan(champ, 0.0));
+            System.out.println(champ.getName());
         }
         return result;
     }

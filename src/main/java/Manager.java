@@ -2,7 +2,6 @@ import com.merakianalytics.orianna.Orianna;
 import com.merakianalytics.orianna.types.common.Queue;
 import com.merakianalytics.orianna.types.common.Region;
 import com.merakianalytics.orianna.types.core.match.Match;
-import com.merakianalytics.orianna.types.core.match.Matches;
 import com.merakianalytics.orianna.types.core.staticdata.Champion;
 import com.merakianalytics.orianna.types.core.summoner.Summoner;
 import org.joda.time.DateTime;
@@ -11,7 +10,6 @@ import java.io.*;
 import java.util.*;
 
 import static com.merakianalytics.orianna.types.core.match.MatchHistories.forSummoners;
-import static com.merakianalytics.orianna.types.core.match.MatchHistory.*;
 
 public class Manager {
 
@@ -331,13 +329,17 @@ public class Manager {
     }
 
 
-    public String[] doStuffWithClash(List<Summoner> summoners) {
+    public String[] doStuffWithClash(List<Summoner> summoners, boolean image) {
         var clashPlayers = new ArrayList<ClashPlayer>();
         for (var s : summoners) {
             clashPlayers.add(new ClashPlayer(s));
         }
         var clashTeam = new ClashTeam(clashPlayers, "FPX");
-        return clashTeam.bans();
+        if (image) {
+            return clashTeam.bansPerPlayer();
+        } else {
+            return clashTeam.bansText();
+        }
     }
 
 }

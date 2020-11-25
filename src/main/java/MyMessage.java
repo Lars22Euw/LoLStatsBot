@@ -170,6 +170,10 @@ class MyMessage {
         return null;
     }
 
+    public static String stalk(Arguments args) {
+        return stalk(args.summoner, args.gamesTogether, args.queues);
+    }
+
     public static String stalk(Summoner sum, int gamesTogether, List<Queue> queues) {
         StringBuilder output = new StringBuilder();
         MatchHistory games;
@@ -337,16 +341,15 @@ class MyMessage {
         return sb.toString().split("\\n");
     }
 
-    public String[] clash(String input) {
-        System.out.println("pre clash");
+
+
+    public String[] clash(String input, boolean image) {
         List<Summoner> summoners = null;
         try {
             summoners = parseSummoners(input.split(" ")[1]);
-
         } catch (InputError e) {
             return new String[]{e.error};
         }
-        System.out.println("pre do clash");
-        return manager.doStuffWithClash(summoners);
+        return manager.doStuffWithClash(summoners, image);
     }
 }

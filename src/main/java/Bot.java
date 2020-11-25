@@ -4,11 +4,17 @@ import com.merakianalytics.orianna.types.core.summoner.Summoner;
 import discord4j.core.*;
 import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.object.entity.Message;
+import discord4j.core.object.entity.MessageChannel;
 import discord4j.core.object.util.Snowflake;
 import discord4j.core.spec.EmbedCreateSpec;
 import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
 
+import javax.imageio.ImageIO;
+import java.awt.*;
+import java.awt.geom.AffineTransform;
+import java.awt.image.BufferedImage;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -27,31 +33,32 @@ public class Bot {
             new Command("matches", this::matches),
             new Command("c", this::clash),
             new Command("clash", this::clash),
-            new Command("s", this::stalk),
-            new Command("stalk", this::stalk),
+            new RiotCommand("s", this::stalk),
+            new RiotCommand("stalk", this::stalk),
             new Command("h", this::help),
             new Command("help", this::help));
 
-    private Integer stalk(Message message) {
+    private Arguments parseStalk(Message message) {
         var msgText = message.getContent().get();
         var args = msgText.split(" ");
         if (args.length < 2) {
             message.getChannel().block().createMessage("```Expected at least a Summoner```").block();
-            return -1;
+            return null;
         }
+
         final Summoner sum;
         try {
             sum = MyMessage.parseSummoners(args[1]).get(0);
         } catch (InputError e) {
             message.getChannel().block().createMessage("```"+e.error+"```").block();
-            return -1;
+            return null;
         }
         final int gamesTogether;
         try {
             gamesTogether = (args.length < 3) ? 2 : Integer.parseInt(args[2]);
         } catch (Exception e) {
             message.getChannel().block().createMessage("```Tried to parse number but found: "+args[2]+"```").block();
-            return -1;
+            return null;
         }
         List<Queue> queues;
         try {
@@ -59,39 +66,66 @@ public class Bot {
             queues = MyMessage.parseQueues(args[3]);
         } catch (InputError e) {
             message.getChannel().block().createMessage("```"+e.error+"```").block();
-            return -1;
+            return null;
         }
-        var resp = MyMessage.stalk(sum, gamesTogether, queues);
-        StringBuilder sb = new StringBuilder(resp);
+        return new Arguments.Builder()
+                .withQueues(queues)
+                .withGamesTogether(gamesTogether)
+                .withSummoner(sum)
+                .get();
+    }
 
-        var title = buildTitle("Stalk for: ", List.of(sum), queues, null, null);
-
-        System.out.println("Stalk: "+sb.toString());
-        message.getChannel().block().createMessage(title + "```" + sb.toString() + "```").block();
-        return 0;
+    private String stalk(Arguments arguments) {
+        var resp = MyMessage.stalk(arguments);
+        System.out.println("Stalk: "+resp);
+        return resp;
     }
 
 
     private Integer clash(Message message) {
-        var msgText = message.getContent().get();
-        var resp = messageClash(msgText);
+        var msgText = message.getContent().orElseThrow();
+        if (manager == null) System.out.println("manager is null");
+        boolean image = msgText.contains("-i");
+        var resp = new MyMessage(manager).clash(msgText, image);
         StringBuilder sb = new StringBuilder();
         for (var line: resp) {
-            //System.out.println("some " + line);
             sb.append(line).append("\n");
         }
         System.out.println("Clash: "+sb.toString());
-        message.getChannel().block().createMessage("```" + "\nBans in order:\n" + sb.toString() + "```").block();
+        MessageChannel channel = message.getChannel().block();
+        if (image) {
+            Color textColor = new Color(173, 136, 0);
+            ImageResponseGenerator.clash(sb.toString());
+            BufferedImage background = null;
+            try {
+                background = ImageIO.read(new File("client.png"));
+            } catch (IOException e) {
+                channel.createMessage("Error when loading sub-images of the image response").block();
+                e.printStackTrace();
+            }
+            BufferedImage img = new BufferedImage(498, 280, BufferedImage.TYPE_INT_ARGB);
+            Graphics2D g = img.createGraphics();
+            AffineTransform at = new AffineTransform();
+            g.drawImage(background, at, null);
+            g.setColor(Color.BLACK);
+            g.drawLine(0, 0, 50, 50);
+            ByteArrayOutputStream output = new ByteArrayOutputStream();
+
+            try {
+                ImageIO.write(img, "png", output);
+            } catch (IOException e) {
+                channel.createMessage("Error when creating the image response").block();
+                e.printStackTrace();
+            }
+            channel.createMessage((messageCreateSpec) -> messageCreateSpec.addFile("clash.png", new ByteArrayInputStream(output.toByteArray()))).block();
+        } else {
+            channel.createMessage("```" + "\nBans in order:\n" + sb.toString() + "```").block();
+        }
         return 0;
     }
 
-    private String[] messageClash(String input) {
-        if (manager == null) System.out.println("manager is null");
-        return new MyMessage(manager).clash(input);
-    }
 
     private Integer matches(Message message) throws NoSuchElementException {
-        if (manager == null) System.out.println("manager is null");
         var msgText = message.getContent().orElseThrow();
 
         var tokens = msgText.trim().split(" ");
@@ -185,8 +219,8 @@ public class Bot {
         return 0;
     }
 
-    StringBuilder buildTitle(String start, List<Summoner> summoners, List<Queue> queues, List<Champion> champions,
-                             DateTime startDate) {
+    static StringBuilder buildTitle(String start, List<Summoner> summoners, List<Queue> queues, List<Champion> champions,
+                                    DateTime startDate) {
         var title = new StringBuilder(start);
 
         if (summoners.size() > 0) {
@@ -322,7 +356,16 @@ public class Bot {
                         //System.out.println(parts[0]);
                         if ((PREFIX+c.argument).equalsIgnoreCase(parts[0])) {
                             c.func.apply(event.getMessage());
-                            break;
+                            return;
+                        }
+                    }
+                    if (parts[0].startsWith(PREFIX)) {
+                        event.getMessage().getChannel().block().createMessage("Unknown command!").block();
+                        for (var c : commands) {
+                            if (c.argument.equals("help")) {
+                                c.func.apply(event.getMessage());
+                                break;
+                            }
                         }
                     }
                 });

@@ -2,4 +2,4 @@ target
 nohup.out
 *.txt
 /summoners/
-res/*.png
+client.png
