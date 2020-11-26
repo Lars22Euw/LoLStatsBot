@@ -146,7 +146,7 @@ public class Bot {
                         {"-n GAMES", "games looked up (max 200) : `70`"}
                 };
                 messageSpec.setEmbed(setEmbed(".s .stalk",
-                        "`.s SUM -g MIN -q QUEUES -n GAMES`\n" +
+                        "`.s SUM [-g MIN] [-q QUEUES] [-n GAMES]`\n" +
                                 "`.stalk Lars -g 2 -q CLASH -n 50`\n"+
                                 "From last GAMES games with MIN games together in given queues\n" +
                                 "`*` or `ALL` lists all queues\n" +
@@ -155,7 +155,8 @@ public class Bot {
         } else if (m.getContent().get().toLowerCase().contains("clash")) {
             messageChannel.createMessage(messageSpec -> {
                 final String[][] fields = {
-                        {"SUMS", "List of players or shorthands: Lars,FoxDrop"}};
+                        {"SUMS", "List of players or shorthands: Lars,FoxDrop"},
+                        {"-i", "Add -i to receive and image based response"}};
                 messageSpec.setEmbed(setEmbed(".c .clash",
                         "`.c SUMS`\n" +
                                 "Arguments are space separated, use `,` within args\n" +
@@ -165,10 +166,10 @@ public class Bot {
         } else {
             messageChannel.createMessage(messageSpec -> {
                 final String[][] fields = {
-                        {".clash SUMS", "Draft prediction for list of players."},
+                        {".clash SUMS [-i]", "Draft prediction for list of players."},
                         {".help COMM", "Help for specific command."},
-                        {".matches SUMS -c CHAMPS -q QUEUES", "graphs matches per day with various filters."},
-                        {".stalk SUM -g MIN -q QUEUES -n GAMES", "recent Summoners you played with."}
+                        {".matches SUMS [-c CHAMPS] [-q QUEUES]", "graphs matches per day with various filters."},
+                        {".stalk SUM [-g MIN] [-q QUEUES] [-n GAMES]", "recent Summoners you played with."}
                 };
                 messageSpec.setEmbed(setEmbed("LoL Stats Commands",
                         "You can dm this bot.\n" +
