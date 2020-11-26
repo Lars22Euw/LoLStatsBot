@@ -9,6 +9,7 @@ public class ClashTeam {
     List<ClashPlayer> players;
 
     String name;
+    public static final int ENTRIES_PER_PLAYER = 7;
 
     ClashTeam(List<ClashPlayer> players, String name) {
         this.players = players;
@@ -90,14 +91,24 @@ public class ClashTeam {
     }
 
     public String[] bansPerPlayer() {
-        int entriesPerPlayer = 7;
-        var result = new String[entriesPerPlayer * players.size()];
+        var result = new String[ENTRIES_PER_PLAYER * players.size()];
         somethingWithPremades();
         int i = 0;
         for (var cp : players) {
             var bans = mergeIntoOrderedListByPlayer(cp);
-            for (var j = 0; j < entriesPerPlayer; j++) {
-                result[i++] = bans.get(j).toString();
+            for (var j = 0; j < ENTRIES_PER_PLAYER; j++) {
+                final var clashBan = bans.get(j);
+                double mastery = 0;
+                double recency = 0;
+                for (var r : clashBan.reasons) {
+                    if (r.message.contains("mastery")) {
+                        mastery = r.value;
+                    } else {
+                        recency = r.value;
+                    }
+                }
+                var champ = clashBan.toString().split("\\[")[0].replaceAll("[^a-zA-Z0-9]", "").replaceAll(" ", "");
+                result[i++] = cp.name + ":" + champ + ":" + clashBan.toString() + ";" + clashBan.score + ";" + mastery + ";" + recency;
             }
         }
         return result;

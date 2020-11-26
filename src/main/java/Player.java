@@ -192,7 +192,7 @@ public class Player {
     }
 
     public static void main(String[] args) {
-        var res = MyMessage.stalk(Summoner.named("PinkMeowerRanger").get(),  2, null);
+        var res = MyMessage.stalk(Summoner.named("PinkMeowerRanger").get(),  2, null, 50);
     }
 
 }

@@ -1,7 +1,13 @@
 import com.merakianalytics.orianna.types.common.Queue;
+import com.merakianalytics.orianna.types.core.staticdata.Champion;
 import com.merakianalytics.orianna.types.core.summoner.Summoner;
+import discord4j.core.object.entity.Channel;
 import discord4j.core.object.entity.Message;
+import discord4j.core.object.entity.MessageChannel;
+import org.joda.time.DateTime;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -9,26 +15,29 @@ import java.util.function.Function;
 
 public class RiotCommand extends Command {
 
-    public RiotCommand(String argument, Function<Arguments, String> query, Function<Message, Arguments> parse) {
+    public RiotCommand(String argument, BiFunction<Arguments, MessageChannel, Integer> query, Function<Message, Arguments> parse) {
         super(argument);
         func = funcGen(query, parse);
     }
 
-    public RiotCommand(String argument, Function<Arguments, String> query) {
+    public RiotCommand(String argument, BiFunction<Arguments, MessageChannel, Integer> query) {
         super(argument);
         func = funcGen(query, this::parseArguments);
     }
 
-    private Function<Message, Integer> funcGen(Function<Arguments, String> query, Function<Message, Arguments> parse){
+    private Function<Message, Integer> funcGen(BiFunction<Arguments, MessageChannel, Integer> query, Function<Message, Arguments> parse){
         return m -> {
+            System.out.println(m.getContent().orElseThrow());
+            final var channel = m.getChannel().block();
+            Message wait = channel.createMessage("Hang on while I'm querying the Riot API.").block();
+            System.out.println(m.getContent().orElseThrow());
             Arguments arguments = parse.apply(m);
-            Message wait = m.getChannel().block().createMessage("Hang on while I'm querying the Riot API.").block();
-
-            String result = query.apply(arguments);
-            var title = Bot.buildTitle("Stalk for: ", List.of(arguments.summoner), arguments.queues, null, null);
-
-            System.out.println(title + " ; " + result);
-            m.getChannel().block().createMessage(title + "```" + result + "```").block();
+            System.out.println(m.getContent().orElseThrow() + arguments);
+            if (arguments == null) {
+                throw new InputError("Parsing Error!");
+            }
+            System.out.println(m.getContent().orElseThrow());
+            query.apply(arguments, channel);
             wait.delete("Outdated message as query terminated.").block();
             return 0;
         };
@@ -36,37 +45,66 @@ public class RiotCommand extends Command {
 
     private Arguments parseArguments(Message message) {
         var msgText = message.getContent().orElseThrow();
-        var args = msgText.split(" ");
-        if (args.length < 2) {
-            message.getChannel().block().createMessage("```Expected at least a Summoner```").block();
-            throw new IllegalArgumentException();
+        boolean image = false;
+        DateTime startDate = MyMessage.getDateMinus(MyMessage.MONTHS_IN_THE_PAST, 1);
+        List<Queue> queues = new ArrayList<>();
+        List<Champion> champions = new ArrayList<>();
+        List<Summoner> summoners = new ArrayList<>();
+        int gamesTogether = 2;
+        int games = 70;
+        var tokens = msgText.split(" ");
+        for (int index = 1; index < tokens.length; index++) {
+            try {
+                switch (tokens[index]) {
+                    default: {
+                        summoners.addAll(MyMessage.parseSummoners(tokens[index]));
+                        break;
+                    }
+                    case "-t": { // with TIME
+                        startDate = MyMessage.parseTime(tokens[++index]);
+                        break;
+                    }
+                    case "-c": { // with CHAMPION
+                        champions.addAll(MyMessage.parseChamps(tokens[++index]));
+                        break;
+                    }
+                    case "-g": { // with GamesTogether
+                        gamesTogether = Integer.parseInt(tokens[++index]);
+                        break;
+                    }
+                    case "-n": { // with Games
+                        games = Integer.parseInt(tokens[++index]);
+                        break;
+                    }
+                    case "-q": { // with QUEUE
+                        queues = MyMessage.parseQueues(tokens[++index]);
+                        break;
+                    }
+                    case "-i": { // as image
+                        image = true;
+                        break;
+                    }
+                }
+            } catch (InputError e) {
+                System.out.println("End of caught error.");
+                message.getChannel().block().createMessage(e.error).block();
+                return null;
+            } catch (Exception e) {
+                System.out.println(e.getMessage());
+                return null;
+            }
         }
-        final Summoner sum;
-        try {
-            sum = MyMessage.parseSummoners(args[1]).get(0);
-        } catch (InputError e) {
-            message.getChannel().block().createMessage("```"+e.error+"```").block();
-            throw new IllegalArgumentException();
-        }
-        final int gamesTogether;
-        try {
-            gamesTogether = (args.length < 3) ? 2 : Integer.parseInt(args[2]);
-        } catch (Exception e) {
-            message.getChannel().block().createMessage("```Tried to parse number but found: "+args[2]+"```").block();
-            throw new IllegalArgumentException();
-        }
-        List<Queue> queues;
-        try {
-            if (args.length < 4) throw new InputError("Expected queues argument");
-            queues = MyMessage.parseQueues(args[3]);
-        } catch (InputError e) {
-            message.getChannel().block().createMessage("```"+e.error+"```").block();
-            throw new IllegalArgumentException();
-        }
-        return new Arguments.Builder()
+
+        final var arguments = new Arguments.Builder()
                 .withQueues(queues)
                 .withGamesTogether(gamesTogether)
-                .withSummoner(sum).get();
+                .withGames(games)
+                .withSummoners(summoners)
+                .withChampions(champions)
+                .withStartTime(startDate)
+                .isImage(image)
+                .get();
+        return arguments;
     }
 
 }

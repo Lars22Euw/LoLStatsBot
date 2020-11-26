@@ -288,11 +288,26 @@ public class Manager {
         return edges;
     }
 
+    public SortedSet<Game> gamesWith(final Arguments arguments) {
+        return gamesWith(arguments.summoners, arguments.champions, arguments.queues, arguments.startDate);
+    }
+
     public SortedSet<Game> gamesWith(final List<Summoner> summoners, List<Champion> champions,
-                                     List<Queue> queues, DateTime startDate, DateTime endDate) {
+                                     List<Queue> queues, DateTime startDate) {
+        DateTime endDate = DateTime.now();
+        System.out.printf("Args: sums %d champs %d queues %d " +
+                        "%n Start: "+Util.dtf.print(startDate)+
+                        "%n End: "+Util.dtf.print(endDate) + "%n",
+                summoners.size(), champions.size(), queues.size());
         if (summoners.size() == 0) return new TreeSet<>();
 
-        var histories= forSummoners(summoners)
+        var histories = queues.size() == 0 ?
+                forSummoners(summoners)
+                .withChampions(champions)
+                .withStartTime(startDate)
+                .withEndTime(endDate).get()
+                :
+                forSummoners(summoners)
                 .withChampions(champions)
                 .withQueues(queues)
                 .withStartTime(startDate)
