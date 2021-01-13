@@ -2,3 +2,5 @@ target
 nohup.out
 *.txt
 /summoners/
+res/background.png
+**/*.png

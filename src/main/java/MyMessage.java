@@ -85,26 +85,26 @@ class MyMessage {
 
     public static List<Queue> parseQueues(String token) throws InputError {
         var result = new ArrayList<Queue>();
-        for (var q: token.split(",")) {
+        for (var q : token.split(",")) {
             try {
                 final String queueName = q.toUpperCase();
-                if (queueName.equals("ALL") || queueName.equals("*")) {
-                    System.out.println("Parsed all Queues");
-                    return null;
+                if (queueName.equals("*") || queueName.equals("ALL")) {
+                    System.out.println("Parsed all queues.");
+                    return new ArrayList<>();
                 }
                 if (queueName.equals("SR")) {
                     result.addAll(List.of(Queue.NORMAL, Queue.CLASH, Queue.CUSTOM, Queue.BLIND_PICK));
                     result.addAll(Queue.RANKED);
-                    System.out.println("Parsed Queues on Summoners Rift");
+                    System.out.println("Parsed Queues on Summoners Rift.");
                     continue;
                 }
                 if (queueName.equals("RANKED")) {
                     result.addAll(Queue.RANKED);
-                    System.out.println("Parsed Queue Ranked");
+                    System.out.println("Parsed Queue Ranked.");
                     continue;
                 }
                 var queue = Queue.valueOf(queueName);
-                System.out.println("Parsed Queue "+ queue.name());
+                System.out.println("Parsed Queue "+ queue.name() + ".");
                 result.add(queue);
             } catch (IllegalArgumentException e) {
                 throw new InputError(q+" did not match a queue.\n");
@@ -170,11 +170,16 @@ class MyMessage {
         return null;
     }
 
-    public static String stalk(Summoner sum, int gamesTogether, List<Queue> queues) {
+    public static String stalk(Arguments args) {
+        return stalk(args.summoner, args.gamesTogether, args.queues, args.games);
+    }
+
+    public static String stalk(Summoner sum, int gamesTogether, List<Queue> queues, int historySize) {
+        historySize = Math.min(historySize, 200);
         StringBuilder output = new StringBuilder();
         MatchHistory games;
-        final int historySize = 50;
-        if (queues == null || queues.size() == 0) {
+
+        if (queues.size() == 0) {
             games = MatchHistory.forSummoner(sum).withEndIndex(historySize).get();
         } else {
             games = MatchHistory.forSummoner(sum).withQueues(queues).withEndIndex(historySize).get();
@@ -191,7 +196,6 @@ class MyMessage {
 
         final String d2 = "%02d";
         final String f3_0 = "%3.0f%%";
-
 
         String[] resPlayer = new String[gamesFiltered.size()];
         for (int i = 1; i < gamesFiltered.size() && i < 11; i++) {
@@ -337,16 +341,11 @@ class MyMessage {
         return sb.toString().split("\\n");
     }
 
-    public String[] clash(String input) {
-        System.out.println("pre clash");
-        List<Summoner> summoners = null;
-        try {
-            summoners = parseSummoners(input.split(" ")[1]);
+    public String[] clash(List<Summoner> summoners, boolean image) {
+        return manager.doStuffWithClash(summoners, image);
+    }
 
-        } catch (InputError e) {
-            return new String[]{e.error};
-        }
-        System.out.println("pre do clash");
-        return manager.doStuffWithClash(summoners);
+    public String[] clash(Arguments arguments) {
+        return clash(arguments.summoners, arguments.image);
     }
 }

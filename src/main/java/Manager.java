@@ -2,7 +2,6 @@ import com.merakianalytics.orianna.Orianna;
 import com.merakianalytics.orianna.types.common.Queue;
 import com.merakianalytics.orianna.types.common.Region;
 import com.merakianalytics.orianna.types.core.match.Match;
-import com.merakianalytics.orianna.types.core.match.Matches;
 import com.merakianalytics.orianna.types.core.staticdata.Champion;
 import com.merakianalytics.orianna.types.core.summoner.Summoner;
 import org.joda.time.DateTime;
@@ -11,7 +10,6 @@ import java.io.*;
 import java.util.*;
 
 import static com.merakianalytics.orianna.types.core.match.MatchHistories.forSummoners;
-import static com.merakianalytics.orianna.types.core.match.MatchHistory.*;
 
 public class Manager {
 
@@ -290,11 +288,26 @@ public class Manager {
         return edges;
     }
 
+    public SortedSet<Game> gamesWith(final Arguments arguments) {
+        return gamesWith(arguments.summoners, arguments.champions, arguments.queues, arguments.startDate);
+    }
+
     public SortedSet<Game> gamesWith(final List<Summoner> summoners, List<Champion> champions,
-                                     List<Queue> queues, DateTime startDate, DateTime endDate) {
+                                     List<Queue> queues, DateTime startDate) {
+        DateTime endDate = DateTime.now();
+        System.out.printf("Args: sums %d champs %d queues %d " +
+                        "%n Start: "+Util.dtf.print(startDate)+
+                        "%n End: "+Util.dtf.print(endDate) + "%n",
+                summoners.size(), champions.size(), queues.size());
         if (summoners.size() == 0) return new TreeSet<>();
 
-        var histories= forSummoners(summoners)
+        var histories = queues.size() == 0 ?
+                forSummoners(summoners)
+                .withChampions(champions)
+                .withStartTime(startDate)
+                .withEndTime(endDate).get()
+                :
+                forSummoners(summoners)
                 .withChampions(champions)
                 .withQueues(queues)
                 .withStartTime(startDate)
@@ -331,13 +344,17 @@ public class Manager {
     }
 
 
-    public String[] doStuffWithClash(List<Summoner> summoners) {
+    public String[] doStuffWithClash(List<Summoner> summoners, boolean image) {
         var clashPlayers = new ArrayList<ClashPlayer>();
         for (var s : summoners) {
             clashPlayers.add(new ClashPlayer(s));
         }
         var clashTeam = new ClashTeam(clashPlayers, "FPX");
-        return clashTeam.bans();
+        if (image) {
+            return clashTeam.bansPerPlayer();
+        } else {
+            return clashTeam.bansText();
+        }
     }
 
 }
