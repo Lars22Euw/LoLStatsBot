@@ -240,7 +240,7 @@ class MyMessage {
         if (x < 0) {
             time = time.withYear(time.getYear()-1);
         }
-        var index = (x + 12) % 12 + 1;
+        var index = (x + 12) % 12;
         var time2 = time.withMonthOfYear(index);
         return time2.withDayOfWeek(day);
     }

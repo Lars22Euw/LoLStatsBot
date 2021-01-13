@@ -9,6 +9,8 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 public class U {
     public static void main(String[] args) {
@@ -252,6 +254,10 @@ public class U {
 
     public static <T> T getOrNull(List<T> inputT, int i) {
         return i < inputT.size() ? inputT.get(i) : null;
+    }
+
+    public static <T> Stream<UPair<T, Integer>> enumerate(List<T> c) {
+        return IntStream.of(c.size()).mapToObj(i -> UPair.of(i, c.get(i)));
     }
 
 }

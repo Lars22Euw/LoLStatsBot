@@ -1,12 +1,13 @@
 import discord4j.core.object.entity.Message;
 
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 public class Command {
     String argument;
-    Function<Message, Integer> func;
+    Consumer<Message> func;
 
-    public Command(String argument, Function<Message, Integer> func) {
+    public Command(String argument, Consumer<Message> func) {
         this.argument = argument;
         this.func = func;
     }

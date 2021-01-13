@@ -2,6 +2,7 @@ import com.merakianalytics.orianna.types.common.Queue;
 import com.merakianalytics.orianna.types.core.staticdata.Champion;
 import com.merakianalytics.orianna.types.core.summoner.Summoner;
 import org.joda.time.DateTime;
+import util.U;
 
 import java.util.List;
 
@@ -18,13 +19,13 @@ public class Arguments {
     @Override
     public String toString() {
         return "Arguments{" +
-                "queues=" + queues +
-                ", champions=" + champions +
-                ", summoners=" + summoners +
-                ", summoner=" + summoner +
+                "queues=" + U.mapAdd(queues, Enum::name) +
+                ", champions=" + U.mapAdd(champions, Champion::getName) +
+                ", summoners=" + U.mapAdd(summoners, Summoner::getName) +
+                ", summoner=" + summoner.getName() +
                 ", gamesTogether=" + gamesTogether +
                 ", image=" + image +
-                ", startDate=" + startDate +
+                ", startDate=" + startDate.toString(Util.dtf) +
                 ", games=" + games +
                 '}';
     }

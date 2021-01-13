@@ -105,7 +105,7 @@ public class ImageResponseGenerator {
 
         g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, scoreMastery));
         AffineTransform atm = new AffineTransform();
-        atm.translate(x + CHAMPION_SQUARE_SIZE * 7.0/24 * championSquareScale - 80 * masteryScale / 2, y + (CHAMPION_SQUARE_SIZE + 5) * championSquareScale);
+        atm.translate(x + CHAMPION_SQUARE_SIZE * 7.0 / 24 * championSquareScale - 80 * masteryScale / 2, y + (CHAMPION_SQUARE_SIZE + 5) * championSquareScale);
         atm.scale(masteryScale, masteryScale);
         g.drawImage(mastery, atm, null);
 

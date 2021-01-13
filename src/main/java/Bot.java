@@ -31,8 +31,17 @@ public class Bot {
             new RiotCommand("clash", this::clash),
             new RiotCommand("s", this::stalk),
             new RiotCommand("stalk", this::stalk),
+            new RiotCommand("f", this::farm),
+            new RiotCommand("farm", this::farm),
             new Command("h", this::help),
             new Command("help", this::help));
+
+    private void farm(Arguments arguments, MessageChannel channel) {
+        var mh = arguments.summoner.matchHistory()
+                .withQueues(arguments.queues)
+                .withChampions(arguments.champions)
+                .get();
+    }
 
     private Integer stalk(Arguments arguments, MessageChannel c) {
         var resp = MyMessage.stalk(arguments);
@@ -229,7 +238,7 @@ public class Bot {
                     for (var c: commands) {
                         //System.out.println(parts[0]);
                         if ((PREFIX+c.argument).equalsIgnoreCase(parts[0])) {
-                            c.func.apply(event.getMessage());
+                            c.func.accept(event.getMessage());
                             return;
                         }
                     }
@@ -237,7 +246,7 @@ public class Bot {
                         event.getMessage().getChannel().block().createMessage("Unknown command!").block();
                         for (var c : commands) {
                             if (c.argument.equals("help")) {
-                                c.func.apply(event.getMessage());
+                                c.func.accept(event.getMessage());
                                 break;
                             }
                         }

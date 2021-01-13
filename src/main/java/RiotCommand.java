@@ -1,45 +1,46 @@
 import com.merakianalytics.orianna.types.common.Queue;
 import com.merakianalytics.orianna.types.core.staticdata.Champion;
 import com.merakianalytics.orianna.types.core.summoner.Summoner;
-import discord4j.core.object.entity.Channel;
 import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.MessageChannel;
 import org.joda.time.DateTime;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.function.BiFunction;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 
 public class RiotCommand extends Command {
 
-    public RiotCommand(String argument, BiFunction<Arguments, MessageChannel, Integer> query, Function<Message, Arguments> parse) {
+    public RiotCommand(String argument, BiConsumer<Arguments, MessageChannel> query, Function<Message, Arguments> parse) {
         super(argument);
         func = funcGen(query, parse);
     }
 
-    public RiotCommand(String argument, BiFunction<Arguments, MessageChannel, Integer> query) {
+    public RiotCommand(String argument, BiConsumer<Arguments, MessageChannel> query) {
         super(argument);
         func = funcGen(query, this::parseArguments);
     }
 
-    private Function<Message, Integer> funcGen(BiFunction<Arguments, MessageChannel, Integer> query, Function<Message, Arguments> parse){
+    private Consumer<Message> funcGen(BiConsumer<Arguments, MessageChannel> query, Function<Message, Arguments> parse){
         return m -> {
             System.out.println(m.getContent().orElseThrow());
             final var channel = m.getChannel().block();
+            assert channel != null;
             Message wait = channel.createMessage("Hang on while I'm querying the Riot API.").block();
+            assert wait != null;
             System.out.println(m.getContent().orElseThrow());
             Arguments arguments = parse.apply(m);
             System.out.println(m.getContent().orElseThrow() + arguments);
             if (arguments == null) {
-                throw new InputError("Parsing Error!");
+                wait.delete("Outdated message as query terminated.").block();
+                return;
             }
             System.out.println(m.getContent().orElseThrow());
-            query.apply(arguments, channel);
+            query.accept(arguments, channel);
             wait.delete("Outdated message as query terminated.").block();
-            return 0;
         };
     }
 
@@ -95,7 +96,7 @@ public class RiotCommand extends Command {
             }
         }
 
-        final var arguments = new Arguments.Builder()
+        return new Arguments.Builder()
                 .withQueues(queues)
                 .withGamesTogether(gamesTogether)
                 .withGames(games)
@@ -104,7 +105,6 @@ public class RiotCommand extends Command {
                 .withStartTime(startDate)
                 .isImage(image)
                 .get();
-        return arguments;
     }
 
 }
