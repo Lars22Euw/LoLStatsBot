@@ -1,4 +1,6 @@
 import com.merakianalytics.orianna.types.common.Queue;
+import com.merakianalytics.orianna.types.core.match.Match;
+import com.merakianalytics.orianna.types.core.match.ParticipantStats;
 import com.merakianalytics.orianna.types.core.staticdata.Champion;
 import com.merakianalytics.orianna.types.core.summoner.Summoner;
 import discord4j.core.DiscordClient;
@@ -10,12 +12,14 @@ import discord4j.core.object.util.Snowflake;
 import discord4j.core.spec.EmbedCreateSpec;
 import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
+import util.U;
+import util.UPair;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.SortedSet;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 public class Bot {
 
@@ -37,10 +41,40 @@ public class Bot {
             new Command("help", this::help));
 
     private void farm(Arguments arguments, MessageChannel channel) {
-        var mh = arguments.summoner.matchHistory()
-                .withQueues(arguments.queues)
-                .withChampions(arguments.champions)
-                .get();
+        try {
+            var matchHistory = arguments.summoner.matchHistory()
+                    .withQueues(arguments.queues)
+                    .withChampions(arguments.champions)
+                    .withEndIndex(arguments.games)
+                    .get();
+            U.log("Matchhistory");
+            List<ParticipantStats> mhStats = matchHistory.stream().map(m -> m.getParticipants().find(p -> p.getSummoner().getName()
+                    .equalsIgnoreCase(arguments.summoner.getName())).getStats()).collect(Collectors.toList());
+            StringBuilder sb = new StringBuilder();
+            U.log("mhStats");
+            for (UPair<Match, ParticipantStats> m : U.zip(matchHistory, mhStats)) {
+                U.log(m.first);
+                final var queue = m.first.getQueue();
+                sb.append(m.first.getCreationTime().toString(Util.dtf))
+                        .append(" ")
+                        .append(Util.asString(queue == null ? "" : queue.name(), 8))
+                        .append(" ")
+                        .append(Util.asString(m.first.getParticipants().find(p -> p.getSummoner().getName()
+                        .equalsIgnoreCase(arguments.summoner.getName())).getChampion().getName(), 14));
+
+                    final var creepScore = m.second.getCreepScore() + m.second.getNeutralMinionsKilled();
+                    final var cs = Util.asString(creepScore, 5);
+                    sb.append(" ")
+                            .append(cs)
+                            .append("\n");
+
+            }
+            System.out.println("Clash: "+sb.toString());
+            channel.createMessage("```" + "\nCreep Scores:\n" + sb.toString() + "```").block();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
     }
 
     private Integer stalk(Arguments arguments, MessageChannel c) {
