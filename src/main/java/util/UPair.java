@@ -1,11 +1,11 @@
 package util;
 
 public class UPair<T, R> {
-    T first;
-    R second;
+    public T first;
+    public R second;
 
-    public static <T,R> UPair of(T t, R r) {
-        return new UPair(t, t);
+    public static <T, R> UPair of(T t, R r) {
+        return new UPair<T, R>(t, r);
     }
 
     @Override

@@ -1,23 +1,23 @@
 package util;
 
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.*;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 public class U {
     public static void main(String[] args) {
-        Log(getMaximum(List.of(6, 5, 9, 7, 3), i -> 1.0 / i));
-        Log(all(List.of(1, 2, 3), i -> i > 0));
-        Log(all(List.of(1, 2, 3), i -> i > 2));
-        Log(addAll(new ArrayList<>(List.of(1, 2, 3)), new ArrayList<>(List.of(2, 3, 4))));
+        log(getMaximum(List.of(6, 5, 9, 7, 3), i -> 1.0 / i));
+        log(all(List.of(1, 2, 3), i -> i > 0));
+        log(all(List.of(1, 2, 3), i -> i > 2));
+        log(addAll(new ArrayList<>(List.of(1, 2, 3)), new ArrayList<>(List.of(2, 3, 4))));
+        final Function<Character, String> characterStringFunction = c -> U.fill("" + c, 10);
+        log(mapAdd(List.of('A', 'A', 'B', 'C'), characterStringFunction));
     }
 
     public static <T, R> List<R> map(List<T> input, Function<T, R> map) {
@@ -53,21 +53,15 @@ public class U {
     }
 
     public static <T,R,S> List<S> zipMap(List<T> inputT, List<R> inputR, BiFunction<T,R,S> combine) {
-        List result = null;
-        try {
-            var clazz = inputT.getClass();
-            result = clazz.getConstructor().newInstance();
-            for (int i = 0; i < Math.max(inputR.size(), inputT.size()); i++) {
-                result.add(combine.apply(getOrNull(inputT, i), getOrNull(inputR, i)));
-            }
-        } catch (Exception e) {
-            System.out.println("Bad usage");
+        var result = new ArrayList<S>();
+        for (int i = 0; i < Math.max(inputR.size(), inputT.size()); i++) {
+            result.add(combine.apply(getOrNull(inputT, i), getOrNull(inputR, i)));
         }
         return result;
     }
 
     public static <T,R> List<UPair<T,R>> zip(List<T> inputT, List<R> inputR) {
-        return zipMap(inputT, inputR, UPair::of);
+        return zipMap(inputT, inputR, UPair::<T,R>of);
     }
 
     public static <T> List<T> filter(List<T> input, Predicate<T> pred) {
@@ -131,7 +125,7 @@ public class U {
         return false;
     }
 
-    public static void Log(Object... objects) {
+    public static void log(Object... objects) {
         int callersLineNumber = Thread.currentThread().getStackTrace()[2].getLineNumber();
         String className = Thread.currentThread().getStackTrace()[2].getClassName();
         System.out.println('[' + className + ":" + callersLineNumber + ']' + " " +
@@ -153,11 +147,8 @@ public class U {
     }
 
     public static <T, R> R mapAdd(List<T> input, Function<T, R> map, R rBase) {
-        if (input.isEmpty()) return null;
+        if (input.isEmpty()) return rBase;
         try {
-            Method mAdd = rBase.getClass().getMethod("add", rBase.getClass());
-            var acc = rBase;
-
             BiFunction<R, R, R> add =
                     (a1, a2) -> {
                         if (a1 instanceof String) {
@@ -170,13 +161,16 @@ public class U {
                             return (R) Integer.valueOf((Integer) a1 + (Integer) a2);
                         }
                         try {
+                            Method mAdd = rBase.getClass().getMethod("add", rBase.getClass());
+                            var acc = rBase;
                             return (R) mAdd.invoke(a1, a2);
                         } catch (Exception e) {
+                            System.out.println("Bad usage");
                             return a1;
                         }
                     };
-            return mapReduce(input, map, add);
-        } catch (NoSuchMethodException e) {
+            return mapReduce(input, map, add, rBase);
+        } catch (Exception e) {
             System.out.println("Bad usage");
             return null;
         }
@@ -256,8 +250,28 @@ public class U {
         return i < inputT.size() ? inputT.get(i) : null;
     }
 
-    public static <T> Stream<UPair<T, Integer>> enumerate(List<T> c) {
-        return IntStream.of(c.size()).mapToObj(i -> UPair.of(i, c.get(i)));
+    public static <T> Stream<UEnumerator<T>> enumerate(List<T> c) {
+        return IntStream.range(0, c.size()).mapToObj(i -> UEnumerator.of(i, c.get(i)));
     }
 
+    public static <T> T randomEntry(List<T> inputT) {
+        return inputT.get(ThreadLocalRandom.current().nextInt(inputT.size()));
+    }
+
+    public static void repeat(int n, Runnable r) {
+        for (int i = 0; i < n; i++) {
+            r.run();
+        }
+    }
+
+    public static String fill(String s, int length) {
+        return s + ("                                                                              " +
+                "                                    ").substring(0, length - s.length());
+    }
+
+    public static <T> List<T> sort(List<T> inputT, Comparator<T> comparator) {
+        var result = new ArrayList<>(inputT);
+        result.sort(comparator);
+        return result;
+    }
 }
