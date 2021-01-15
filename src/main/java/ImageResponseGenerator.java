@@ -1,20 +1,23 @@
+import com.merakianalytics.orianna.types.core.match.Match;
+import com.merakianalytics.orianna.types.core.match.ParticipantStats;
 import discord4j.core.object.entity.MessageChannel;
+import util.UPair;
 
 import javax.imageio.ImageIO;
 import java.awt.*;
+import java.util.List;
 import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
-import java.util.function.BiFunction;
 import java.util.function.Function;
 
 public class ImageResponseGenerator {
 
     public static final Color TEXT_COLOR = new Color(173, 136, 0);
-    public static final int BACKGROUND_PNG_ZOOM = 3;
+    public static final int BACKGROUND_PNG_ZOOM = 8;
     public static final int BACKGROUND_WIDTH = 498;
     public static final int BACKGROUND_HEIGHT = 280;
     public static final int BACKGROUND_ZOOMED_WIDTH = BACKGROUND_WIDTH * BACKGROUND_PNG_ZOOM;
@@ -28,7 +31,7 @@ public class ImageResponseGenerator {
         var g = img.createGraphics();
         setBackground(channel, g);
         g.setColor(TEXT_COLOR);
-        makeTitle(g);
+        makeTitle(g, "Clashbans:");
 
         var numberOfPlayers = resp.length / ClashTeam.ENTRIES_PER_PLAYER;
         var y = BACKGROUND_ZOOMED_HEIGHT * 0.19;
@@ -42,7 +45,7 @@ public class ImageResponseGenerator {
         var maxMasteryScore = getMaximum(resp, splitSelectAtSemicolon(3));
         var minScoreLog = Math.log(getMinimum(resp, splitSelectAtSemicolon(1)) + 1);
         var maxScoreLog = Math.log(getMaximum(resp, splitSelectAtSemicolon(1)) + 1);
-        makeArrow(g, "Ban Relevance", BACKGROUND_ZOOMED_WIDTH * 0.4, BACKGROUND_ZOOMED_HEIGHT * 0.08, championListWidth);
+        makeArrow(g, BACKGROUND_ZOOMED_WIDTH * 0.95, BACKGROUND_ZOOMED_HEIGHT * 0.08, -championListWidth, 0);
 
         for (int p = 0; p < numberOfPlayers; p++) {
             var x = BACKGROUND_ZOOMED_WIDTH * 0.05;
@@ -69,29 +72,33 @@ public class ImageResponseGenerator {
             y += championListHeight / 4.0;
         }
 
-        ByteArrayOutputStream output = new ByteArrayOutputStream();
-        try {
-            ImageIO.write(img, "png", output);
-        } catch (IOException e) {
-            channel.createMessage("Error when creating the image response").block();
-            e.printStackTrace();
-        }
-        channel.createMessage((messageCreateSpec) ->
-                messageCreateSpec.addFile("clash.png", new ByteArrayInputStream(output.toByteArray()))).block();
+        makeMessage(channel, img, "clash.png");
 
     }
 
-    private static void makeArrow(Graphics2D g, String ban_relevance, double x, double y, double width) {
+    private static void makeArrow(Graphics2D g, double x, double y, double dx, double dy) {
         g.setStroke(new BasicStroke(3));
-        g.drawLine((int) x, (int) y, (int) (x + width), (int) y);
-        final var arrayOffset = 2 * BACKGROUND_PNG_ZOOM;
-        g.drawLine((int) x, (int) y, (int) (x + arrayOffset), (int) (y + arrayOffset));
-        g.drawLine((int) x, (int) y, (int) (x + arrayOffset), (int) (y - arrayOffset));
-        g.drawLine((int) (x + arrayOffset), (int) (y + arrayOffset), (int) (x + arrayOffset), (int) (y - arrayOffset));
-        g.setStroke(new BasicStroke(0));
-        g.setFont(g.getFont().deriveFont(g.getFont().getSize() / 3f));
-        g.drawString(ban_relevance, (int) (x + 1.8 * arrayOffset), (int) (y - 1.15 * arrayOffset));
-        g.setFont(g.getFont().deriveFont(g.getFont().getSize() * 3f));
+        final var xStart = (int) x;
+        final var yStart = (int) y;
+        final var xEnd = (int) (x + dx);
+        final var yEnd = (int) (y + dy);
+        g.drawLine(xStart, yStart, xEnd, yEnd);
+        var firstSideX = dy - dx;
+        var firstSideY = -dx - dy;
+        var secondSideX = -dy - dx;
+        var secondSideY = dx - dy;
+        final var offset = 2 * BACKGROUND_PNG_ZOOM;
+        final var vecLength = vecLength(firstSideX, firstSideY);
+        firstSideX *= offset / vecLength;
+        firstSideY *= offset / vecLength;
+        secondSideX *= offset / vecLength;
+        secondSideY *= offset / vecLength;
+        g.fillPolygon(new int[] {xEnd, (int) (xEnd + firstSideX), (int) (xEnd + secondSideX)},
+                new int[] {yEnd, (int) (yEnd + firstSideY), (int) (yEnd + secondSideY)}, 3);
+    }
+
+    private static double vecLength(double x, double y) {
+        return Math.sqrt(Math.pow(x, 2) + Math.pow(y, 2));
     }
 
     private static void drawChampionWithReasons(MessageChannel channel, Graphics2D g, double x, double y,
@@ -141,11 +148,11 @@ public class ImageResponseGenerator {
         return result;
     }
 
-    private static void makeTitle(Graphics2D g) {
+    private static void makeTitle(Graphics2D g, String s) {
         g.setFont(new Font("Calibri", Font.PLAIN, 12));
         Font newFont = g.getFont().deriveFont(g.getFont().getSize() * (float) BACKGROUND_PNG_ZOOM * 2.4f);
         g.setFont(newFont);
-        g.drawString("ClashBans:", (int) (BACKGROUND_ZOOMED_WIDTH * 0.05), (int) (BACKGROUND_ZOOMED_HEIGHT * 0.08) + g.getFont().getSize() / 2);
+        g.drawString(s, (int) (BACKGROUND_ZOOMED_WIDTH * 0.05), (int) (BACKGROUND_ZOOMED_HEIGHT * 0.08) + g.getFont().getSize() / 2);
         g.setFont(g.getFont().deriveFont(g.getFont().getSize() * 0.6f));
     }
 
@@ -170,5 +177,48 @@ public class ImageResponseGenerator {
             e.printStackTrace();
         }
         return image;
+    }
+
+
+    public static void farm(MessageChannel channel, List<UPair<Match, ParticipantStats>> data) {
+        var img = new BufferedImage( BACKGROUND_WIDTH * BACKGROUND_PNG_ZOOM, BACKGROUND_HEIGHT * BACKGROUND_PNG_ZOOM, BufferedImage.TYPE_INT_ARGB);
+        var g = img.createGraphics();
+        setBackground(channel, g);
+        g.setColor(TEXT_COLOR);
+        makeTitle(g, "CreepScore:");
+
+        makeArrow(g,
+                BACKGROUND_ZOOMED_WIDTH * 0.05,
+                BACKGROUND_ZOOMED_HEIGHT * 0.9,
+                BACKGROUND_ZOOMED_WIDTH * 0.9,
+                0);
+        makeArrow(g,
+                BACKGROUND_ZOOMED_WIDTH * 0.05,
+                BACKGROUND_ZOOMED_HEIGHT * 0.9,
+                0,
+                -BACKGROUND_ZOOMED_HEIGHT * 0.6);
+        makeSmallText(g, "cs/min", BACKGROUND_ZOOMED_WIDTH * 0.03, BACKGROUND_ZOOMED_HEIGHT * 0.35);
+        makeSmallText(g, "time", BACKGROUND_ZOOMED_WIDTH * 0.94, BACKGROUND_ZOOMED_HEIGHT * 0.97);
+        makeMessage(channel, img, "farm.png");
+
+    }
+
+    private static void makeSmallText(Graphics2D g, String message, double x, double y) {
+        g.setStroke(new BasicStroke(0));
+        g.setFont(g.getFont().deriveFont(g.getFont().getSize() / 3f));
+        g.drawString(message, (int) (x), (int) (y));
+        g.setFont(g.getFont().deriveFont(g.getFont().getSize() * 3f));
+    }
+
+    private static void makeMessage(MessageChannel channel, BufferedImage img, String s) {
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        try {
+            ImageIO.write(img, "png", output);
+        } catch (IOException e) {
+            channel.createMessage("Error when creating the image response").block();
+            e.printStackTrace();
+        }
+        channel.createMessage((messageCreateSpec) ->
+                messageCreateSpec.addFile(s, new ByteArrayInputStream(output.toByteArray()))).block();
     }
 }

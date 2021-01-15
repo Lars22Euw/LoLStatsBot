@@ -41,48 +41,44 @@ public class Bot {
             new Command("help", this::help));
 
     private void farm(Arguments arguments, MessageChannel channel) {
-        try {
-            var matchHistory = arguments.summoner.matchHistory()
-                    .withQueues(arguments.queues)
-                    .withChampions(arguments.champions)
-                    .withEndIndex(arguments.games)
-                    .get();
-            U.log("Matchhistory");
-            List<ParticipantStats> mhStats = matchHistory.stream().map(m -> m.getParticipants().find(p -> p.getSummoner().getName()
-                    .equalsIgnoreCase(arguments.summoner.getName())).getStats()).collect(Collectors.toList());
-            StringBuilder sb = new StringBuilder();
-            U.log("mhStats");
-            for (UPair<Match, ParticipantStats> m : U.zip(matchHistory, mhStats)) {
-                U.log(m.first);
-                final var queue = m.first.getQueue();
-                sb.append(m.first.getCreationTime().toString(Util.dtf))
-                        .append(" ")
-                        .append(Util.asString(queue == null ? "" : queue.name(), 8))
-                        .append(" ")
-                        .append(Util.asString(m.first.getParticipants().find(p -> p.getSummoner().getName()
-                        .equalsIgnoreCase(arguments.summoner.getName())).getChampion().getName(), 14));
-
-                    final var creepScore = m.second.getCreepScore() + m.second.getNeutralMinionsKilled();
-                    final var cs = Util.asString(creepScore, 5);
-                    sb.append(" ")
-                            .append(cs)
-                            .append("\n");
-
-            }
-            System.out.println("Clash: "+sb.toString());
-            channel.createMessage("```" + "\nCreep Scores:\n" + sb.toString() + "```").block();
-        } catch (Exception e) {
-            e.printStackTrace();
+        var matchHistory = arguments.summoner.matchHistory()
+                .withQueues(arguments.queues)
+                .withChampions(arguments.champions)
+                .withEndIndex(arguments.games)
+                .get();
+        List<ParticipantStats> mhStats = matchHistory.stream().map(m -> m.getParticipants().find(p -> p.getSummoner().getName()
+                .equalsIgnoreCase(arguments.summoner.getName())).getStats()).collect(Collectors.toList());
+        StringBuilder sb = new StringBuilder();
+        if (arguments.image) {
+            ImageResponseGenerator.farm(channel, U.zip(matchHistory, mhStats));
+            return;
         }
+        for (UPair<Match, ParticipantStats> m : U.zip(matchHistory, mhStats)) {
+            U.log(m.first);
+            final var queue = m.first.getQueue();
+            sb.append(m.first.getCreationTime().toString(Util.dtf))
+                    .append(" ")
+                    .append(Util.asString(queue == null ? "" : queue.name(), 8))
+                    .append(" ")
+                    .append(Util.asString(m.first.getParticipants().find(p -> p.getSummoner().getName()
+                            .equalsIgnoreCase(arguments.summoner.getName())).getChampion().getName(), 14));
 
+            final var creepScore = m.second.getCreepScore() + m.second.getNeutralMinionsKilled();
+            final var cs = Util.asString(creepScore, 5);
+            sb.append(" ")
+                    .append(cs)
+                    .append("\n");
+
+        }
+        System.out.println("Clash: " + sb.toString());
+        channel.createMessage("```" + "\nCreep Scores:\n" + sb.toString() + "```").block();
     }
 
-    private Integer stalk(Arguments arguments, MessageChannel c) {
+    private void stalk(Arguments arguments, MessageChannel c) {
         var resp = MyMessage.stalk(arguments);
         var title = Bot.buildTitle("Stalk for: ", List.of(arguments.summoner), arguments.queues, null, null);
         System.out.println(title + " ; " + resp);
         c.createMessage(title + "```" + resp + "```").block();
-        return 0;
     }
 
     private Integer clash(Arguments arguments, MessageChannel channel) {
