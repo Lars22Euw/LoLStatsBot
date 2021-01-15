@@ -1,8 +1,10 @@
 import com.merakianalytics.orianna.types.core.match.Match;
 import com.merakianalytics.orianna.types.core.match.ParticipantStats;
 import discord4j.core.object.entity.MessageChannel;
+import util.U;
 import util.UPair;
 
+import javax.imageio.IIOException;
 import javax.imageio.ImageIO;
 import java.awt.*;
 import java.util.List;
@@ -14,7 +16,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.function.Function;
 
-public class ImageResponseGenerator {
+public class ImageGenerator {
 
     public static final Color TEXT_COLOR = new Color(173, 136, 0);
     public static final int BACKGROUND_PNG_ZOOM = 8;
@@ -23,8 +25,8 @@ public class ImageResponseGenerator {
     public static final int BACKGROUND_ZOOMED_WIDTH = BACKGROUND_WIDTH * BACKGROUND_PNG_ZOOM;
     public static final int BACKGROUND_ZOOMED_HEIGHT = BACKGROUND_HEIGHT * BACKGROUND_PNG_ZOOM;
     public static final int CHAMPION_SQUARE_SIZE = 120;
-    public static BufferedImage mastery = readImage("mastery.png");
-    public static BufferedImage recently = readImage("recently.png");
+    public static final BufferedImage mastery = readImage("mastery.png");
+    public static final BufferedImage recently = readImage("recently.png"); //TODO: handle not found in cool way.
 
     public static void clash(String[] resp, MessageChannel channel) {
         var img = new BufferedImage( BACKGROUND_WIDTH * BACKGROUND_PNG_ZOOM, BACKGROUND_HEIGHT * BACKGROUND_PNG_ZOOM, BufferedImage.TYPE_INT_ARGB);
@@ -171,6 +173,9 @@ public class ImageResponseGenerator {
         BufferedImage image = null;
         try {
             image = ImageIO.read(new File("res/" + s));
+        } catch (IIOException e) {
+            U.log(System.err,"Image "+s+" not found in res/");
+            return null;
         } catch (IOException e) {
             if (channel != null)
                 channel.createMessage("Error when loading icon at res/" + s).block();
