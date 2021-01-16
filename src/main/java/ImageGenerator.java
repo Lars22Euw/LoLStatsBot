@@ -78,25 +78,47 @@ public class ImageGenerator {
 
     }
 
-    private static void makeArrow(Graphics2D g, double x, double y, double dx, double dy) {
-        g.setStroke(new BasicStroke(3));
-        final var xStart = (int) x;
-        final var yStart = (int) y;
-        final var xEnd = (int) (x + dx);
-        final var yEnd = (int) (y + dy);
+    /**
+     * fills an arrow on the graphics object
+     * @param g graphic object
+     * @param x double, relative position in image
+     * @param y double, relative position in image
+     * @param dx double, relative offset in image
+     * @param dy double, relative offset in image
+     */
+    private static void fillArrow(Graphics2D g, double x, double y, double dx, double dy) {
+        U.log("Line relative: ("+x+","+y+") to ("+(x+dx)+","+(y+dy)+")");
+
+        final int width = 5; // TODO: make width global relative to img
+        g.setStroke(new BasicStroke(width));
+        final var xStart = (int) (x * OUT_WIDTH);
+        final var yStart = (int) (y * OUT_HEIGHT);
+        final var xEnd = (int) ((x + dx) * OUT_WIDTH);
+        final var yEnd = (int) ((y + dy) * OUT_HEIGHT);
+        U.log("Line: ("+xStart+","+yStart+") to ("+xEnd+","+yEnd+")");
         g.drawLine(xStart, yStart, xEnd, yEnd);
-        var firstSideX = dy - dx;
-        var firstSideY = -dx - dy;
-        var secondSideX = -dy - dx;
-        var secondSideY = dx - dy;
-        final var offset = 2 * BACKGROUND_PNG_ZOOM;
-        final var vecLength = vecLength(firstSideX, firstSideY);
-        firstSideX *= offset / vecLength;
-        firstSideY *= offset / vecLength;
-        secondSideX *= offset / vecLength;
-        secondSideY *= offset / vecLength;
-        g.fillPolygon(new int[] {xEnd, (int) (xEnd + firstSideX), (int) (xEnd + secondSideX)},
-                new int[] {yEnd, (int) (yEnd + firstSideY), (int) (yEnd + secondSideY)}, 3);
+
+        //norm direction
+        var len = vecLength(dx, dy);
+        var dxN = dx/len;
+        var dyN = dy/len;
+
+        //front
+        int xf = xEnd + (int) (dxN * width * 2);
+        int yf = yEnd + (int) (dyN * width * 2);
+
+        //left
+        int xl = xEnd + (int) (dyN * width * 2);
+        int yl = yEnd - (int) (dxN * width * 2);
+
+        //right
+        int xr = xEnd - (int) (dyN * width * 2);
+        int yr = yEnd + (int) (dxN * width * 2);
+
+        U.log("Triangle: ("+xf+","+yf+") to ("+xl+","+yl+") to ("+xr+","+yr+")");
+
+        g.fillPolygon(new int[] {xf, xl, xr},
+                      new int[] {yf, yl, yr}, 3);
     }
 
     private static double vecLength(double x, double y) {
