@@ -19,38 +19,46 @@ import java.util.function.Function;
 public class ImageGenerator {
 
     public static final Color TEXT_COLOR = new Color(173, 136, 0);
-    public static final int BACKGROUND_PNG_ZOOM = 8;
-    public static final int BACKGROUND_WIDTH = 498;
-    public static final int BACKGROUND_HEIGHT = 280;
-    public static final int BACKGROUND_ZOOMED_WIDTH = BACKGROUND_WIDTH * BACKGROUND_PNG_ZOOM;
-    public static final int BACKGROUND_ZOOMED_HEIGHT = BACKGROUND_HEIGHT * BACKGROUND_PNG_ZOOM;
-    public static final int CHAMPION_SQUARE_SIZE = 120;
+    public static final int BG_SCALE = 4;
+    public static final BufferedImage background = readImage("background.png");
     public static final BufferedImage mastery = readImage("mastery.png");
-    public static final BufferedImage recently = readImage("recently.png"); //TODO: handle not found in cool way.
+    public static final BufferedImage recently = readImage("recently.png");
+    public static final int BACKGROUND_HEIGHT = (background == null) ? 280 : background.getHeight();
+    public static final int BACKGROUND_WIDTH = (background == null) ? 498 : background.getWidth();
+    public static final int OUT_WIDTH = BACKGROUND_WIDTH * BG_SCALE;
+    public static final int OUT_HEIGHT = BACKGROUND_HEIGHT * BG_SCALE;
+    public static final int CHAMPION_SQUARE_SIZE = 120;
+
+    static BufferedImage createScaledBufferedImage(BufferedImage background, int scale) {
+        int w = background.getWidth() * scale;
+        int h = background.getHeight() * scale;
+        return new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
+    }
 
     public static void clash(String[] resp, MessageChannel channel) {
-        var img = new BufferedImage( BACKGROUND_WIDTH * BACKGROUND_PNG_ZOOM, BACKGROUND_HEIGHT * BACKGROUND_PNG_ZOOM, BufferedImage.TYPE_INT_ARGB);
+        var img = createScaledBufferedImage(mastery, BG_SCALE);
         var g = img.createGraphics();
-        setBackground(channel, g);
+
+        setBackground(g, background);
         g.setColor(TEXT_COLOR);
         makeTitle(g, "Clashbans:");
 
         var numberOfPlayers = resp.length / ClashTeam.ENTRIES_PER_PLAYER;
-        var y = BACKGROUND_ZOOMED_HEIGHT * 0.19;
-        var championSquareScale = 0.24 * BACKGROUND_PNG_ZOOM;
+        var y = OUT_HEIGHT * 0.19;
+        var championSquareScale = 0.24 * BG_SCALE;
         var masteryScale = championSquareScale * 1.1;
         var recentlyScale = championSquareScale * 0.42;
-        final var championListWidth = BACKGROUND_ZOOMED_WIDTH * 0.6 - CHAMPION_SQUARE_SIZE * championSquareScale;
-        final var championListHeight = BACKGROUND_ZOOMED_HEIGHT * 0.8 - (CHAMPION_SQUARE_SIZE + 55) * championSquareScale;
+        final var championListWidth = OUT_WIDTH * 0.6 - CHAMPION_SQUARE_SIZE * championSquareScale;
+        final var championListHeight = OUT_HEIGHT * 0.8 - (CHAMPION_SQUARE_SIZE + 55) * championSquareScale;
 
         var maxRecentlyScore = getMaximum(resp, splitSelectAtSemicolon(2));
         var maxMasteryScore = getMaximum(resp, splitSelectAtSemicolon(3));
         var minScoreLog = Math.log(getMinimum(resp, splitSelectAtSemicolon(1)) + 1);
         var maxScoreLog = Math.log(getMaximum(resp, splitSelectAtSemicolon(1)) + 1);
-        makeArrow(g, BACKGROUND_ZOOMED_WIDTH * 0.95, BACKGROUND_ZOOMED_HEIGHT * 0.08, -championListWidth, 0);
+        fillArrow(g, 0.95, 0.08, -championListWidth, 0); // TODO: adapt champ list
 
         for (int p = 0; p < numberOfPlayers; p++) {
-            var x = BACKGROUND_ZOOMED_WIDTH * 0.05;
+            var x = OUT_WIDTH * 0.05;
             var summonerName = resp[p * ClashTeam.ENTRIES_PER_PLAYER].split(":")[0];
             g.drawString(summonerName, (int) x, (int) (y + g.getFont().getSize() / 2 +  110 * championSquareScale / 2));
             for (int i = 0; i < ClashTeam.ENTRIES_PER_PLAYER; i++) {
@@ -61,9 +69,9 @@ public class ImageGenerator {
                 float scoreMastery = (float) (splitSelectAtSemicolon(3).apply(resp[p * ClashTeam.ENTRIES_PER_PLAYER + i]) / maxMasteryScore);
 
                 scoreRecently *= scoreRecently * scoreRecently;
-                var trueX = BACKGROUND_ZOOMED_WIDTH * 0.4 + scoreRatio * championListWidth;
+                var trueX = OUT_WIDTH * 0.4 + scoreRatio * championListWidth;
                 x = Math.max(trueX, x);
-                if (x + (CHAMPION_SQUARE_SIZE + 10) * championSquareScale > BACKGROUND_ZOOMED_WIDTH) {
+                if (x + (CHAMPION_SQUARE_SIZE + 10) * championSquareScale > OUT_WIDTH) {
                     break;
                 }
                 drawChampionWithReasons(channel, g, x, y,
@@ -174,17 +182,10 @@ public class ImageGenerator {
 
     private static void makeTitle(Graphics2D g, String s) {
         g.setFont(new Font("Calibri", Font.PLAIN, 12));
-        Font newFont = g.getFont().deriveFont(g.getFont().getSize() * (float) BACKGROUND_PNG_ZOOM * 2.4f);
+        Font newFont = g.getFont().deriveFont(g.getFont().getSize() * (float) BG_SCALE * 2.4f);
         g.setFont(newFont);
-        g.drawString(s, (int) (BACKGROUND_ZOOMED_WIDTH * 0.05), (int) (BACKGROUND_ZOOMED_HEIGHT * 0.08) + g.getFont().getSize() / 2);
+        g.drawString(s, (int) (OUT_WIDTH * 0.05), (int) (OUT_HEIGHT * 0.08) + g.getFont().getSize() / 2);
         g.setFont(g.getFont().deriveFont(g.getFont().getSize() * 0.6f));
-    }
-
-    private static void setBackground(MessageChannel channel, Graphics2D g) {
-        BufferedImage background = readImage(channel, "background.png");
-        AffineTransform at = new AffineTransform();
-        at.scale(BACKGROUND_PNG_ZOOM, BACKGROUND_PNG_ZOOM);
-        g.drawImage(background, at, null);
     }
 
     private static BufferedImage readImage(String s) {
@@ -196,7 +197,7 @@ public class ImageGenerator {
         try {
             image = ImageIO.read(new File("res/" + s));
         } catch (IIOException e) {
-            U.log(System.err,"Image "+s+" not found in res/");
+            U.log(System.err, "Image "+s+" not found in res/");
             return null;
         } catch (IOException e) {
             if (channel != null)
@@ -206,26 +207,23 @@ public class ImageGenerator {
         return image;
     }
 
+    private static void setBackground(Graphics2D g, BufferedImage image) {
+        AffineTransform at = new AffineTransform();
+        at.scale(BG_SCALE, BG_SCALE);
+        g.drawImage(image, at, null);
+    }
 
     public static void farm(MessageChannel channel, List<UPair<Match, ParticipantStats>> data) {
-        var img = new BufferedImage( BACKGROUND_WIDTH * BACKGROUND_PNG_ZOOM, BACKGROUND_HEIGHT * BACKGROUND_PNG_ZOOM, BufferedImage.TYPE_INT_ARGB);
+        var img = new BufferedImage( BACKGROUND_WIDTH * BG_SCALE, BACKGROUND_HEIGHT * BG_SCALE, BufferedImage.TYPE_INT_ARGB);
         var g = img.createGraphics();
-        setBackground(channel, g);
+        setBackground(g, background);
         g.setColor(TEXT_COLOR);
         makeTitle(g, "CreepScore:");
 
-        makeArrow(g,
-                BACKGROUND_ZOOMED_WIDTH * 0.05,
-                BACKGROUND_ZOOMED_HEIGHT * 0.9,
-                BACKGROUND_ZOOMED_WIDTH * 0.9,
-                0);
-        makeArrow(g,
-                BACKGROUND_ZOOMED_WIDTH * 0.05,
-                BACKGROUND_ZOOMED_HEIGHT * 0.9,
-                0,
-                -BACKGROUND_ZOOMED_HEIGHT * 0.6);
-        makeSmallText(g, "cs/min", BACKGROUND_ZOOMED_WIDTH * 0.03, BACKGROUND_ZOOMED_HEIGHT * 0.35);
-        makeSmallText(g, "time", BACKGROUND_ZOOMED_WIDTH * 0.94, BACKGROUND_ZOOMED_HEIGHT * 0.97);
+        fillArrow(g, 0.05, 0.9, 0.9, 0); // >
+        fillArrow(g, 0.05, 0.9, 0, -0.6); // ^
+        makeSmallText(g, "cs/min", OUT_WIDTH * 0.03, OUT_HEIGHT * 0.35);
+        makeSmallText(g, "time", OUT_WIDTH * 0.94, OUT_HEIGHT * 0.97);
         makeMessage(channel, img, "farm.png");
 
     }
