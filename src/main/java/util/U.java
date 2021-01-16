@@ -126,15 +126,20 @@ public class U {
         return false;
     }
 
-    public static void log(PrintStream out, Object... objects) {
-        int callersLineNumber = Thread.currentThread().getStackTrace()[2].getLineNumber();
-        String className = Thread.currentThread().getStackTrace()[2].getClassName();
+    private static void _deepLog(PrintStream out, Object... objects) {
+        int callersLineNumber = Thread.currentThread().getStackTrace()[3].getLineNumber();
+        String className = Thread.currentThread().getStackTrace()[3].getClassName();
         out.println('[' + className + ":" + callersLineNumber + ']' + " " +
                 join(new ArrayList<>(Arrays.asList(objects))));
     }
 
+    public static void log(PrintStream out, Object... objects) {
+        _deepLog(out, objects);
+
+    }
+
     public static void log(Object... objects) {
-        log(System.out, objects);
+        _deepLog(System.out, objects);
     }
 
     public static <T> String join(List<T> input) {
