@@ -1,5 +1,6 @@
 package util;
 
+import java.io.PrintStream;
 import java.lang.reflect.Method;
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
@@ -122,11 +123,20 @@ public class U {
         return false;
     }
 
-    public static void log(Object... objects) {
-        int callersLineNumber = Thread.currentThread().getStackTrace()[2].getLineNumber();
-        String className = Thread.currentThread().getStackTrace()[2].getClassName();
-        System.out.println('[' + className + ":" + callersLineNumber + ']' + " " +
+    private static void _deepLog(PrintStream out, Object... objects) {
+        int callersLineNumber = Thread.currentThread().getStackTrace()[3].getLineNumber();
+        String className = Thread.currentThread().getStackTrace()[3].getClassName();
+        out.println('[' + className + ":" + callersLineNumber + ']' + " " +
                 join(new ArrayList<>(Arrays.asList(objects))));
+    }
+
+    public static void log(PrintStream out, Object... objects) {
+        _deepLog(out, objects);
+
+    }
+
+    public static void log(Object... objects) {
+        _deepLog(System.out, objects);
     }
 
     public static <T> String join(List<T> input) {
