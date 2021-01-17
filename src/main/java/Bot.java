@@ -51,26 +51,26 @@ public class Bot {
                     .equalsIgnoreCase(arguments.summoner.getName())).getStats()).collect(Collectors.toList());
             StringBuilder sb = new StringBuilder();
             if (arguments.image) {
-                ImageResponseGenerator.farm(channel, U.zip(matchHistory, mhStats));
+                ImageGenerator.farm(channel, U.zip(matchHistory, mhStats));
                 return;
             }
-            for (UPair<Match, ParticipantStats> m : U.zip(matchHistory, mhStats)) {
-                U.log(m.first);
-                final var queue = m.first.getQueue();
-                sb.append(m.first.getCreationTime().toString(Util.dtf))
+            U.forEach(matchHistory, mhStats, (mh, st) -> {
+                U.log(mh);
+                final var queue = mh.getQueue();
+                sb.append(mh.getCreationTime().toString(Util.dtf))
                         .append(" ")
                         .append(Util.asString(queue == null ? "" : queue.name(), 8))
                         .append(" ")
-                        .append(Util.asString(m.first.getParticipants().find(p -> p.getSummoner().getName()
+                        .append(Util.asString(mh.getParticipants().find(p -> p.getSummoner().getName()
                                 .equalsIgnoreCase(arguments.summoner.getName())).getChampion().getName(), 14));
 
-                final var creepScore = m.second.getCreepScore() + m.second.getNeutralMinionsKilled();
+                final var creepScore = st.getCreepScore() + st.getNeutralMinionsKilled();
                 final var cs = Util.asString(creepScore, 5);
                 sb.append(" ")
                         .append(cs)
                         .append("\n");
 
-            }
+            });
             System.out.println("Clash: " + sb.toString());
             channel.createMessage("```" + "\nCreep Scores:\n" + sb.toString() + "```").block();
         } catch (Exception e) {
@@ -88,7 +88,7 @@ public class Bot {
     private Integer clash(Arguments arguments, MessageChannel channel) {
         var resp = new MyMessage(manager).clash(arguments);
         if (arguments.image) {
-            ImageResponseGenerator.clash(resp, channel);
+            ImageGenerator.clash(resp, channel);
         } else {
             StringBuilder sb = new StringBuilder();
             for (var line: resp) {

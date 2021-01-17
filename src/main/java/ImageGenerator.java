@@ -224,13 +224,13 @@ public class ImageGenerator {
         fillArrow(g, 0.05, 0.9, 0, -0.6); // ^
 
 
-        makeSmallText(g, "cs/min", BACKGROUND_ZOOMED_WIDTH * 0.03, BACKGROUND_ZOOMED_HEIGHT * 0.35);
-        makeSmallText(g, "time", BACKGROUND_ZOOMED_WIDTH * 0.94, BACKGROUND_ZOOMED_HEIGHT * 0.97);
+        makeSmallText(g, "cs/min", OUT_WIDTH * 0.03, OUT_HEIGHT * 0.35);
+        makeSmallText(g, "time", OUT_WIDTH * 0.94, OUT_HEIGHT * 0.97);
 
-        var baseHeight = BACKGROUND_ZOOMED_HEIGHT * 0.58;
-        var baseWidth = BACKGROUND_ZOOMED_WIDTH * 0.87;
-        var widthOffset = BACKGROUND_ZOOMED_WIDTH * 0.05;
-        var heightOffset = BACKGROUND_ZOOMED_HEIGHT * 0.9;
+        var baseHeight = OUT_HEIGHT * 0.58;
+        var baseWidth = OUT_WIDTH * 0.87;
+        var widthOffset = OUT_WIDTH * 0.05;
+        var heightOffset = OUT_HEIGHT * 0.9;
         var maxFarmPerMinute = data.stream().map(p -> (p.second.getCreepScore() + p.second.getNeutralMinionsKilled())
                 / ((p.first.getDuration().getStandardSeconds() - 90) / 60.0)).max(Double::compareTo).orElse(1.0);
         var totalDuration = data.stream().map(p -> p.first.getDuration().getStandardSeconds()).reduce(Long::sum).orElse(1L);
@@ -272,9 +272,6 @@ public class ImageGenerator {
             g.setStroke(new BasicStroke(10));
             g.setColor(Color.BLACK);
             doubleRectBorder(g, widthOffset + 20, heightOffset - height - 1, width, height);
-            if (i % 10 == 0) {
-                 makeSmallText(g, "" + p.second.getWardsKilled(), widthOffset, BACKGROUND_ZOOMED_HEIGHT * 0.96);
-            }
             widthOffset += width;
         }
         fillArrow(g, 0.05, 0.9, 0.9, 0); // >
