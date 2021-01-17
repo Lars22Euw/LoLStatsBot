@@ -123,7 +123,7 @@ public class U {
         return false;
     }
 
-    private static void _deepLog(PrintStream out, Object... objects) {
+    private static void _log(PrintStream out, Object... objects) {
         int callersLineNumber = Thread.currentThread().getStackTrace()[3].getLineNumber();
         String className = Thread.currentThread().getStackTrace()[3].getClassName();
         out.println('[' + className + ":" + callersLineNumber + ']' + " " +
@@ -131,12 +131,11 @@ public class U {
     }
 
     public static void log(PrintStream out, Object... objects) {
-        _deepLog(out, objects);
-
+        _log(out, objects);
     }
 
     public static void log(Object... objects) {
-        _deepLog(System.out, objects);
+        log(System.out, objects);
     }
 
     public static <T> String join(List<T> input) {
@@ -282,9 +281,11 @@ public class U {
         return result;
     }
 
-    public static <T, R> void forEach(List<T> inputT, List<R> inputR, BiConsumer<T, R> biConsumer) {
-        for (int i = 0; i < Math.min(inputR.size(), inputT.size()); i++) {
-            biConsumer.accept(inputT.get(i), inputR.get(i));
+    public static <T, R> void forEach(Collection<T> inputT, List<R> inputR, BiConsumer<T, R> biConsumer) {
+        Iterator<R> rit = inputR.iterator();
+        Iterator<T> tit = inputT.iterator();
+        while (tit.hasNext() && rit.hasNext()) {
+            biConsumer.accept(tit.next(), rit.next());
         }
     }
 
