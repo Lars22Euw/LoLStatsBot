@@ -3,10 +3,7 @@ package util;
 import java.lang.reflect.Method;
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.function.BiFunction;
-import java.util.function.Function;
-import java.util.function.Predicate;
-import java.util.function.Supplier;
+import java.util.function.*;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -274,4 +271,15 @@ public class U {
         result.sort(comparator);
         return result;
     }
+
+    public static <T, R> void forEach(List<T> inputT, List<R> inputR, BiConsumer<T, R> biConsumer) {
+        for (int i = 0; i < Math.min(inputR.size(), inputT.size()); i++) {
+            biConsumer.accept(inputT.get(i), inputR.get(i));
+        }
+    }
+
+    public static <T, R> void forEach(List<UPair<T, R>> pairs, BiConsumer<T, R> biConsumer) {
+        pairs.forEach(p -> biConsumer.accept(p.first, p.second));
+    }
+
 }

@@ -1,6 +1,7 @@
 import com.merakianalytics.orianna.types.core.match.Match;
 import com.merakianalytics.orianna.types.core.match.ParticipantStats;
 import discord4j.core.object.entity.MessageChannel;
+import util.U;
 import util.UPair;
 
 import javax.imageio.ImageIO;
@@ -197,11 +198,72 @@ public class ImageResponseGenerator {
                 BACKGROUND_ZOOMED_HEIGHT * 0.9,
                 0,
                 -BACKGROUND_ZOOMED_HEIGHT * 0.6);
+
+
         makeSmallText(g, "cs/min", BACKGROUND_ZOOMED_WIDTH * 0.03, BACKGROUND_ZOOMED_HEIGHT * 0.35);
         makeSmallText(g, "time", BACKGROUND_ZOOMED_WIDTH * 0.94, BACKGROUND_ZOOMED_HEIGHT * 0.97);
+
+        var baseHeight = BACKGROUND_ZOOMED_HEIGHT * 0.58;
+        var baseWidth = BACKGROUND_ZOOMED_WIDTH * 0.87;
+        var widthOffset = BACKGROUND_ZOOMED_WIDTH * 0.05;
+        var heightOffset = BACKGROUND_ZOOMED_HEIGHT * 0.9;
+        var maxFarmPerMinute = data.stream().map(p -> (p.second.getCreepScore() + p.second.getNeutralMinionsKilled())
+                / ((p.first.getDuration().getStandardSeconds() - 90) / 60.0)).max(Double::compareTo).orElse(1.0);
+        var totalDuration = data.stream().map(p -> p.first.getDuration().getStandardSeconds()).reduce(Long::sum).orElse(1L);
+        for (int i = data.size() - 1; i >= 0; i--) {
+            UPair<Match, ParticipantStats> p = data.get(i);
+            try {
+                U.log(p.first.getQueue());
+                switch (p.first.getQueue()) {
+                    case NORMAL:
+                        g.setColor(Color.BLUE);
+                        break;
+                    case CLASH:
+                        g.setColor(Color.RED);
+                        break;
+                    case BLIND_PICK:
+                        g.setColor(Color.CYAN);
+                        break;
+                    case ARAM:
+                        g.setColor(Color.GREEN);
+                        break;
+                    case RANKED_SOLO:
+                        g.setColor(Color.YELLOW);
+                        break;
+                    case RANKED_FLEX:
+                        g.setColor(Color.ORANGE);
+                        break;
+                    default:
+                        g.setColor(Color.WHITE);
+                        break;
+                }
+            } catch (Exception e) {
+                g.setColor(Color.WHITE);
+            }
+            var height = baseHeight * ((p.second.getCreepScore() + p.second.getNeutralMinionsKilled()) /
+                    ((p.first.getDuration().getStandardSeconds() / 60.0) * maxFarmPerMinute));
+            var width = baseWidth * (p.first.getDuration().getStandardSeconds() / (double) totalDuration);
+            g.setStroke(new BasicStroke(0));
+            doubleRect(g, widthOffset + 20, heightOffset - height - 1, width, height);
+            g.setStroke(new BasicStroke(10));
+            g.setColor(Color.BLACK);
+            doubleRectBorder(g, widthOffset + 20, heightOffset - height - 1, width, height);
+            if (i % 10 == 0) {
+                 makeSmallText(g, "" + p.second.getWardsKilled(), widthOffset, BACKGROUND_ZOOMED_HEIGHT * 0.96);
+            }
+            widthOffset += width;
+        }
         makeMessage(channel, img, "farm.png");
 
     }
+
+    private static void doubleRect(Graphics2D g, double x, double y, double dx, double dy) {
+        g.fillRect((int) x, (int) y, (int) dx, (int) dy);
+    }
+    private static void doubleRectBorder(Graphics2D g, double x, double y, double dx, double dy) {
+        g.drawRect((int) x, (int) y, (int) dx, (int) dy);
+    }
+
 
     private static void makeSmallText(Graphics2D g, String message, double x, double y) {
         g.setStroke(new BasicStroke(0));

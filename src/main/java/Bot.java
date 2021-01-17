@@ -41,37 +41,41 @@ public class Bot {
             new Command("help", this::help));
 
     private void farm(Arguments arguments, MessageChannel channel) {
-        var matchHistory = arguments.summoner.matchHistory()
-                .withQueues(arguments.queues)
-                .withChampions(arguments.champions)
-                .withEndIndex(arguments.games)
-                .get();
-        List<ParticipantStats> mhStats = matchHistory.stream().map(m -> m.getParticipants().find(p -> p.getSummoner().getName()
-                .equalsIgnoreCase(arguments.summoner.getName())).getStats()).collect(Collectors.toList());
-        StringBuilder sb = new StringBuilder();
-        if (arguments.image) {
-            ImageResponseGenerator.farm(channel, U.zip(matchHistory, mhStats));
-            return;
-        }
-        for (UPair<Match, ParticipantStats> m : U.zip(matchHistory, mhStats)) {
-            U.log(m.first);
-            final var queue = m.first.getQueue();
-            sb.append(m.first.getCreationTime().toString(Util.dtf))
-                    .append(" ")
-                    .append(Util.asString(queue == null ? "" : queue.name(), 8))
-                    .append(" ")
-                    .append(Util.asString(m.first.getParticipants().find(p -> p.getSummoner().getName()
-                            .equalsIgnoreCase(arguments.summoner.getName())).getChampion().getName(), 14));
+        try {
+            var matchHistory = arguments.summoner.matchHistory()
+                    .withQueues(arguments.queues)
+                    .withChampions(arguments.champions)
+                    .withEndIndex(arguments.games)
+                    .get();
+            List<ParticipantStats> mhStats = matchHistory.stream().map(m -> m.getParticipants().find(p -> p.getSummoner().getName()
+                    .equalsIgnoreCase(arguments.summoner.getName())).getStats()).collect(Collectors.toList());
+            StringBuilder sb = new StringBuilder();
+            if (arguments.image) {
+                ImageResponseGenerator.farm(channel, U.zip(matchHistory, mhStats));
+                return;
+            }
+            for (UPair<Match, ParticipantStats> m : U.zip(matchHistory, mhStats)) {
+                U.log(m.first);
+                final var queue = m.first.getQueue();
+                sb.append(m.first.getCreationTime().toString(Util.dtf))
+                        .append(" ")
+                        .append(Util.asString(queue == null ? "" : queue.name(), 8))
+                        .append(" ")
+                        .append(Util.asString(m.first.getParticipants().find(p -> p.getSummoner().getName()
+                                .equalsIgnoreCase(arguments.summoner.getName())).getChampion().getName(), 14));
 
-            final var creepScore = m.second.getCreepScore() + m.second.getNeutralMinionsKilled();
-            final var cs = Util.asString(creepScore, 5);
-            sb.append(" ")
-                    .append(cs)
-                    .append("\n");
+                final var creepScore = m.second.getCreepScore() + m.second.getNeutralMinionsKilled();
+                final var cs = Util.asString(creepScore, 5);
+                sb.append(" ")
+                        .append(cs)
+                        .append("\n");
 
+            }
+            System.out.println("Clash: " + sb.toString());
+            channel.createMessage("```" + "\nCreep Scores:\n" + sb.toString() + "```").block();
+        } catch (Exception e) {
+            e.printStackTrace();
         }
-        System.out.println("Clash: " + sb.toString());
-        channel.createMessage("```" + "\nCreep Scores:\n" + sb.toString() + "```").block();
     }
 
     private void stalk(Arguments arguments, MessageChannel c) {
