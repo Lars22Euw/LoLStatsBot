@@ -26,19 +26,15 @@ public class RiotCommand extends Command {
 
     private Consumer<Message> funcGen(BiConsumer<Arguments, MessageChannel> query, Function<Message, Arguments> parse){
         return m -> {
-            System.out.println(m.getContent().orElseThrow());
             final var channel = m.getChannel().block();
             assert channel != null;
             Message wait = channel.createMessage("Hang on while I'm querying the Riot API.").block();
             assert wait != null;
-            System.out.println(m.getContent().orElseThrow());
             Arguments arguments = parse.apply(m);
-            System.out.println(m.getContent().orElseThrow() + arguments);
             if (arguments == null) {
                 wait.delete("Outdated message as query terminated.").block();
                 return;
             }
-            System.out.println(m.getContent().orElseThrow());
             query.accept(arguments, channel);
             wait.delete("Outdated message as query terminated.").block();
         };

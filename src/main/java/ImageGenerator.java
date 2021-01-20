@@ -19,7 +19,7 @@ import java.util.function.Function;
 public class ImageGenerator {
 
     public static final Color TEXT_COLOR = new Color(173, 136, 0);
-    public static final int BG_SCALE = 4;
+    public static final int BG_SCALE = 8;
     public static final BufferedImage background = readImage("background.png");
     public static final BufferedImage mastery = readImage("mastery.png");
     public static final BufferedImage recently = readImage("recently.png");
@@ -28,6 +28,7 @@ public class ImageGenerator {
     public static final int OUT_WIDTH = BACKGROUND_WIDTH * BG_SCALE;
     public static final int OUT_HEIGHT = BACKGROUND_HEIGHT * BG_SCALE;
     public static final int CHAMPION_SQUARE_SIZE = 120;
+    public static final int LINE_WIDTH = OUT_WIDTH / 800;
 
     static BufferedImage createScaledBufferedImage(BufferedImage background, int scale) {
         int w = background.getWidth() * scale;
@@ -97,8 +98,7 @@ public class ImageGenerator {
     private static void fillArrow(Graphics2D g, double x, double y, double dx, double dy) {
         U.log("Line relative: ("+x+","+y+") to ("+(x+dx)+","+(y+dy)+")");
 
-        final int width = 5; // TODO: make width global relative to img
-        g.setStroke(new BasicStroke(width));
+        g.setStroke(new BasicStroke(LINE_WIDTH));
         final var xStart = (int) (x * OUT_WIDTH);
         final var yStart = (int) (y * OUT_HEIGHT);
         final var xEnd = (int) ((x + dx) * OUT_WIDTH);
@@ -106,22 +106,22 @@ public class ImageGenerator {
         U.log("Line: ("+xStart+","+yStart+") to ("+xEnd+","+yEnd+")");
         g.drawLine(xStart, yStart, xEnd, yEnd);
 
-        //norm direction
+        // norm direction
         var len = vecLength(dx, dy);
         var dxN = dx/len;
         var dyN = dy/len;
 
-        //front
-        int xf = xEnd + (int) (dxN * width * 2);
-        int yf = yEnd + (int) (dyN * width * 2);
+        // front
+        int xf = xEnd + (int) (dxN * LINE_WIDTH * 2);
+        int yf = yEnd + (int) (dyN * LINE_WIDTH * 2);
 
-        //left
-        int xl = xEnd + (int) (dyN * width * 2);
-        int yl = yEnd - (int) (dxN * width * 2);
+        // left
+        int xl = xEnd + (int) (dyN * LINE_WIDTH * 2);
+        int yl = yEnd - (int) (dxN * LINE_WIDTH * 2);
 
-        //right
-        int xr = xEnd - (int) (dyN * width * 2);
-        int yr = yEnd + (int) (dxN * width * 2);
+        // right
+        int xr = xEnd - (int) (dyN * LINE_WIDTH * 2);
+        int yr = yEnd + (int) (dxN * LINE_WIDTH * 2);
 
         U.log("Triangle: ("+xf+","+yf+") to ("+xl+","+yl+") to ("+xr+","+yr+")");
 
@@ -227,10 +227,10 @@ public class ImageGenerator {
         makeSmallText(g, "cs/min", OUT_WIDTH * 0.03, OUT_HEIGHT * 0.35);
         makeSmallText(g, "time", OUT_WIDTH * 0.94, OUT_HEIGHT * 0.97);
 
-        var baseHeight = OUT_HEIGHT * 0.58;
-        var baseWidth = OUT_WIDTH * 0.87;
-        var widthOffset = OUT_WIDTH * 0.05;
-        var heightOffset = OUT_HEIGHT * 0.9;
+        var baseWidth = 0.87;
+        var baseHeight = 0.58;
+        var widthOffset = 0.05;
+        var heightOffset = 0.9;
         var maxFarmPerMinute = data.stream().map(p -> (p.second.getCreepScore() + p.second.getNeutralMinionsKilled())
                 / ((p.first.getDuration().getStandardSeconds() - 90) / 60.0)).max(Double::compareTo).orElse(1.0);
         var totalDuration = data.stream().map(p -> p.first.getDuration().getStandardSeconds()).reduce(Long::sum).orElse(1L);
@@ -267,33 +267,34 @@ public class ImageGenerator {
             var height = baseHeight * ((p.second.getCreepScore() + p.second.getNeutralMinionsKilled()) /
                     ((p.first.getDuration().getStandardSeconds() / 60.0) * maxFarmPerMinute));
             var width = baseWidth * (p.first.getDuration().getStandardSeconds() / (double) totalDuration);
+            U.log(height, width);
             g.setStroke(new BasicStroke(0));
-            doubleRect(g, widthOffset + 20, heightOffset - height - 1, width, height);
-            g.setStroke(new BasicStroke(10));
+            doubleRect(g, widthOffset + 0.01, heightOffset - height - 0.001, width, height);
+            g.setStroke(new BasicStroke(20.0f / data.size() ));
             g.setColor(Color.BLACK);
-            doubleRectBorder(g, widthOffset + 20, heightOffset - height - 1, width, height);
+            doubleRectBorder(g, widthOffset + 0.01, heightOffset - height - 0.001, width, height);
             widthOffset += width;
         }
         fillArrow(g, 0.05, 0.9, 0.9, 0); // >
         fillArrow(g, 0.05, 0.9, 0, -0.6); // ^
-        makeSmallText(g, "cs/min", OUT_WIDTH * 0.03, OUT_HEIGHT * 0.35);
-        makeSmallText(g, "time", OUT_WIDTH * 0.94, OUT_HEIGHT * 0.97);
+        makeSmallText(g, "cs/min", 0.03, 0.35);
+        makeSmallText(g, "time", 0.94, 0.97);
         makeMessage(channel, img, "farm.png");
 
     }
 
     private static void doubleRect(Graphics2D g, double x, double y, double dx, double dy) {
-        g.fillRect((int) x, (int) y, (int) dx, (int) dy);
+        g.fillRect((int) (x * OUT_WIDTH), (int) (y * OUT_HEIGHT), (int) (dx * OUT_WIDTH), (int) (dy * OUT_HEIGHT));
     }
     private static void doubleRectBorder(Graphics2D g, double x, double y, double dx, double dy) {
-        g.drawRect((int) x, (int) y, (int) dx, (int) dy);
+        g.drawRect((int) (x * OUT_WIDTH), (int) (y * OUT_HEIGHT), (int) (dx * OUT_WIDTH), (int) (dy * OUT_HEIGHT));
     }
 
 
     private static void makeSmallText(Graphics2D g, String message, double x, double y) {
         g.setStroke(new BasicStroke(0));
         g.setFont(g.getFont().deriveFont(g.getFont().getSize() / 3f));
-        g.drawString(message, (int) (x), (int) (y));
+        g.drawString(message, (int) (OUT_WIDTH * x), (int) (OUT_HEIGHT * y));
         g.setFont(g.getFont().deriveFont(g.getFont().getSize() * 3f));
     }
 

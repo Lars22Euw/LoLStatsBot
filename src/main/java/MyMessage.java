@@ -19,6 +19,7 @@ import static java.util.Map.*;
  */
 class MyMessage {
 
+    public static final int ROWS = 11;
     private Manager manager;
     StringBuilder sb = new StringBuilder();
     static final int MONTHS_IN_THE_PAST = 3;
@@ -198,7 +199,7 @@ class MyMessage {
         final String f3_0 = "%3.0f%%";
 
         String[] resPlayer = new String[gamesFiltered.size()];
-        for (int i = 1; i < gamesFiltered.size() && i < 11; i++) {
+        for (int i = 1; i < gamesFiltered.size() && i < ROWS; i++) {
             var entry = gamesFiltered.get(gamesFiltered.size() -i);
             var name = Summoner.withId(entry.getKey()).get().getName();
             var wins = entry.getValue().wins;
@@ -208,7 +209,7 @@ class MyMessage {
         }
 
         String[] resChamps = new String[champsFiltered.size()];
-        for (var i = 1; i < champsFiltered.size() & i < 11; i++) {
+        for (var i = 1; i < champsFiltered.size() & i < ROWS; i++) {
             var entry = champsFiltered.get(champsFiltered.size()-i);
             var name = Champion.withId(entry.getKey()).get().getName();
             var wins = entry.getValue().wins;
@@ -217,7 +218,7 @@ class MyMessage {
             resChamps[i] = String.format(d2+"/"+d2+"  "+f3_0+"  %-16s", wins, total, p, name);
         }
 
-        var len = Math.max(Math.min(gamesFiltered.size(), 11), Math.min(champsFiltered.size(), 11));
+        var len = Math.max(Math.min(gamesFiltered.size(), ROWS), Math.min(champsFiltered.size(), ROWS));
         String[] res = new String[len-2];
         for (int i = 0; i < res.length; i++) {
             String s = (i+1 < resPlayer.length) ? resPlayer[i+1] : String.format("%-29s", "");
