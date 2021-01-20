@@ -18,7 +18,7 @@ import java.util.function.Function;
 
 public class ImageGenerator {
 
-    public static final Color TEXT_COLOR = new Color(173, 136, 0);
+    public static final Color GOLD = new Color(173, 136, 0);
     public static final int BG_SCALE = 8;
     public static final BufferedImage background = readImage("background.png");
     public static final BufferedImage mastery = readImage("mastery.png");
@@ -28,7 +28,7 @@ public class ImageGenerator {
     public static final int OUT_WIDTH = BACKGROUND_WIDTH * BG_SCALE;
     public static final int OUT_HEIGHT = BACKGROUND_HEIGHT * BG_SCALE;
     public static final int CHAMPION_SQUARE_SIZE = 120;
-    public static final int LINE_WIDTH = OUT_WIDTH / 800;
+    public static final int LINE_WIDTH = OUT_WIDTH / 500;
 
     static BufferedImage createScaledBufferedImage(BufferedImage background, int scale) {
         int w = background.getWidth() * scale;
@@ -37,11 +37,11 @@ public class ImageGenerator {
     }
 
     public static void clash(String[] resp, MessageChannel channel) {
-        var img = createScaledBufferedImage(mastery, BG_SCALE);
+        var img = createScaledBufferedImage(background, BG_SCALE);
         var g = img.createGraphics();
 
         setBackground(g, background);
-        g.setColor(TEXT_COLOR);
+        g.setColor(GOLD);
         makeTitle(g, "Clashbans:");
 
         var numberOfPlayers = resp.length / ClashTeam.ENTRIES_PER_PLAYER;
@@ -56,7 +56,7 @@ public class ImageGenerator {
         var maxMasteryScore = getMaximum(resp, splitSelectAtSemicolon(3));
         var minScoreLog = Math.log(getMinimum(resp, splitSelectAtSemicolon(1)) + 1);
         var maxScoreLog = Math.log(getMaximum(resp, splitSelectAtSemicolon(1)) + 1);
-        fillArrow(g, 0.95, 0.08, -championListWidth, 0); // TODO: adapt champ list
+        fillArrow(g, 0.95, 0.08, -0.55, 0);
 
         for (int p = 0; p < numberOfPlayers; p++) {
             var x = OUT_WIDTH * 0.05;
@@ -96,14 +96,11 @@ public class ImageGenerator {
      * @param dy double, relative offset in image
      */
     private static void fillArrow(Graphics2D g, double x, double y, double dx, double dy) {
-        U.log("Line relative: ("+x+","+y+") to ("+(x+dx)+","+(y+dy)+")");
-
         g.setStroke(new BasicStroke(LINE_WIDTH));
         final var xStart = (int) (x * OUT_WIDTH);
         final var yStart = (int) (y * OUT_HEIGHT);
         final var xEnd = (int) ((x + dx) * OUT_WIDTH);
         final var yEnd = (int) ((y + dy) * OUT_HEIGHT);
-        U.log("Line: ("+xStart+","+yStart+") to ("+xEnd+","+yEnd+")");
         g.drawLine(xStart, yStart, xEnd, yEnd);
 
         // norm direction
@@ -111,19 +108,18 @@ public class ImageGenerator {
         var dxN = dx/len;
         var dyN = dy/len;
 
+        final var arrowHeadScaling = LINE_WIDTH * 3;
         // front
-        int xf = xEnd + (int) (dxN * LINE_WIDTH * 2);
-        int yf = yEnd + (int) (dyN * LINE_WIDTH * 2);
+        int xf = xEnd + (int) (dxN * arrowHeadScaling);
+        int yf = yEnd + (int) (dyN * arrowHeadScaling);
 
         // left
-        int xl = xEnd + (int) (dyN * LINE_WIDTH * 2);
-        int yl = yEnd - (int) (dxN * LINE_WIDTH * 2);
+        int xl = xEnd + (int) (dyN * arrowHeadScaling);
+        int yl = yEnd - (int) (dxN * arrowHeadScaling);
 
         // right
-        int xr = xEnd - (int) (dyN * LINE_WIDTH * 2);
-        int yr = yEnd + (int) (dxN * LINE_WIDTH * 2);
-
-        U.log("Triangle: ("+xf+","+yf+") to ("+xl+","+yl+") to ("+xr+","+yr+")");
+        int xr = xEnd - (int) (dyN * arrowHeadScaling);
+        int yr = yEnd + (int) (dxN * arrowHeadScaling);
 
         g.fillPolygon(new int[] {xf, xl, xr},
                       new int[] {yf, yl, yr}, 3);
@@ -217,15 +213,12 @@ public class ImageGenerator {
         var img = new BufferedImage( BACKGROUND_WIDTH * BG_SCALE, BACKGROUND_HEIGHT * BG_SCALE, BufferedImage.TYPE_INT_ARGB);
         var g = img.createGraphics();
         setBackground(g, background);
-        g.setColor(TEXT_COLOR);
+        g.setColor(GOLD);
         makeTitle(g, "CreepScore:");
-
+        makeSmallText(g, "cs/min", 0.01, 0.33);
+        makeSmallText(g, "time", 0.92, 0.93);
         fillArrow(g, 0.05, 0.9, 0.9, 0); // >
         fillArrow(g, 0.05, 0.9, 0, -0.6); // ^
-
-
-        makeSmallText(g, "cs/min", OUT_WIDTH * 0.03, OUT_HEIGHT * 0.35);
-        makeSmallText(g, "time", OUT_WIDTH * 0.94, OUT_HEIGHT * 0.97);
 
         var baseWidth = 0.87;
         var baseHeight = 0.58;
@@ -275,10 +268,6 @@ public class ImageGenerator {
             doubleRectBorder(g, widthOffset + 0.01, heightOffset - height - 0.001, width, height);
             widthOffset += width;
         }
-        fillArrow(g, 0.05, 0.9, 0.9, 0); // >
-        fillArrow(g, 0.05, 0.9, 0, -0.6); // ^
-        makeSmallText(g, "cs/min", 0.03, 0.35);
-        makeSmallText(g, "time", 0.94, 0.97);
         makeMessage(channel, img, "farm.png");
 
     }
