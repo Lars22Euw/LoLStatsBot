@@ -85,8 +85,14 @@ public class Bot {
         c.createMessage(title + "```" + resp + "```").block();
     }
 
-    private Integer clash(Arguments arguments, MessageChannel channel) {
-        var resp = new MyMessage(manager).clash(arguments);
+    private void clash(Arguments arguments, MessageChannel channel) {
+        String[] resp = new String[0];
+        try {
+            resp = new MyMessage(manager).clash(arguments);
+        } catch (IllegalArgumentException e) {
+            channel.createMessage(String.format("Summoner %s has no matches! Check the spelling.", e.getMessage())).block();
+            return;
+        }
         if (arguments.image) {
             ImageGenerator.clash(resp, channel);
         } else {
@@ -97,10 +103,9 @@ public class Bot {
             System.out.println("Clash: "+sb.toString());
             channel.createMessage("```" + "\nBans in order:\n" + sb.toString() + "```").block();
         }
-        return 0;
     }
 
-    private Integer matches(Arguments arguments, MessageChannel channel) throws NoSuchElementException {
+    private void matches(Arguments arguments, MessageChannel channel) throws NoSuchElementException {
         System.out.println("wtf. No games found");
 
         assert manager != null;
@@ -109,7 +114,7 @@ public class Bot {
         if (matches == null || matches.size() == 0) {
             System.out.println("wtf. No games found");
             channel.createMessage("No games found.\n").block();
-            return -1;
+            return;
         }
 
         System.out.println("wtf. No games found");
@@ -118,7 +123,7 @@ public class Bot {
         var resp = myMessage.build();
         if (resp == null || resp.length == 0) {
             System.out.println("Empty msg");
-            return -1;
+            return;
         }
         StringBuilder sb = new StringBuilder();
         for (var line: resp) {
@@ -127,7 +132,6 @@ public class Bot {
         System.out.println("wtf. No games found");
         StringBuilder title = buildTitle("Matches for:", arguments);
         channel.createMessage(title+"```"+sb.toString()+"```").block();
-        return 0;
     }
 
     static StringBuilder buildTitle(String start, Arguments arguments) {
@@ -166,7 +170,7 @@ public class Bot {
         return title;
     }
 
-    private Integer help(Message m) {
+    private void help(Message m) {
         var messageChannel = m.getChannel().block();
         if (m.getContent().get().toLowerCase().contains("matches")) {
             messageChannel.createMessage(messageSpec -> {
@@ -220,9 +224,6 @@ public class Bot {
                                 "`.matches Lars -c Garen,Teemo`", fields));
             }).block();
         }
-
-
-        return 0;
     }
 
     private Consumer<EmbedCreateSpec> setEmbed(String title, String description, String[][] fields) {

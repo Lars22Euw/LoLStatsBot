@@ -32,7 +32,7 @@ public class RiotCommand extends Command {
             assert wait != null;
             Arguments arguments = parse.apply(m);
             if (arguments == null) {
-                wait.delete("Outdated message as query terminated.").block();
+                wait.delete("Malformed Arguments.").block();
                 return;
             }
             query.accept(arguments, channel);

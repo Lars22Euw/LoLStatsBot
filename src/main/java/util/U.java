@@ -5,17 +5,18 @@ import java.lang.reflect.Method;
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.*;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 public class U {
     public static void main(String[] args) {
-        log(getMaximum(List.of(6, 5, 9, 7, 3), i -> 1.0 / i));
-        log(all(List.of(1, 2, 3), i -> i > 0));
-        log(all(List.of(1, 2, 3), i -> i > 2));
-        log(addAll(new ArrayList<>(List.of(1, 2, 3)), new ArrayList<>(List.of(2, 3, 4))));
-        final Function<Character, String> characterStringFunction = c -> U.fill("" + c, 10);
-        log(mapAdd(List.of('A', 'A', 'B', 'C'), characterStringFunction));
+        List<List<String>> list = List.of(List.of("a"), List.of("b"));
+        var flat = list
+                .stream()
+                .flatMap(Collection::stream)
+                .collect(Collectors.toList());
+
     }
 
     public static <T, R> List<R> map(List<T> input, Function<T, R> map) {

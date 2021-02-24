@@ -49,6 +49,7 @@ public class ClashTeam {
                 }
             }
         }
+
         for (var p: players) {
             p.normalizeRecent();
         }

@@ -117,6 +117,9 @@ public class ClashPlayer extends Player {
     }
 
     public void normalizeRecent() {
+        if (matches.isEmpty()) {
+            throw new IllegalArgumentException(name);
+        }
         recentScores.forEach(clashBan -> clashBan.score *= RECENTLY_SCALING / matches.size());
         recentScores.forEach(clashBan -> clashBan.reasons.add(
                 new Reason(makeReason2(clashBan.score), clashBan.score)));
