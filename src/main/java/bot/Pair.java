@@ -1,3 +1,5 @@
+package bot;
+
 public class Pair implements Comparable<Pair> {
     public int wins, games;
 

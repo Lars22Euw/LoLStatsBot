@@ -1,3 +1,5 @@
+package bot;
+
 public class Reason {
     String message;
     double value;

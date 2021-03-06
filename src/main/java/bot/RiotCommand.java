@@ -1,3 +1,5 @@
+package bot;
+
 import com.merakianalytics.orianna.types.common.Queue;
 import com.merakianalytics.orianna.types.core.staticdata.Champion;
 import com.merakianalytics.orianna.types.core.summoner.Summoner;
@@ -32,7 +34,7 @@ public class RiotCommand extends Command {
             assert wait != null;
             Arguments arguments = parse.apply(m);
             if (arguments == null) {
-                wait.delete("Malformed Arguments.").block();
+                wait.delete("Malformed bot.Arguments.").block();
                 return;
             }
             query.accept(arguments, channel);

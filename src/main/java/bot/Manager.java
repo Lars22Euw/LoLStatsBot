@@ -1,3 +1,5 @@
+package bot;
+
 import com.merakianalytics.orianna.Orianna;
 import com.merakianalytics.orianna.types.common.Queue;
 import com.merakianalytics.orianna.types.common.Region;
@@ -60,7 +62,7 @@ public class Manager {
         var p = new Player(Lars, m);
         var premades = p.getPremades(Lars.matchHistory().withStartIndex(0).withEndIndex(10).get());
 
-        //var rd = new RankDistribution(new Manager(args[0]), "gameIds.txt");
+        //var rd = new bot.RankDistribution(new bot.Manager(args[0]), "gameIds.txt");
 
         //rd.extractPlayers();
         //rd.summoners.add(Summoner.named("TheLars22").get());
@@ -72,7 +74,7 @@ public class Manager {
         //for (int a: List.of(0, 5, 9, 10, 11, 29, 30, 31, 71)) {
             //System.out.println(a +" "+rd.getBucketIndex(a));
         //}
-        /*var m = new Manager("names-test.txt", args[0]);
+        /*var m = new bot.Manager("names-test.txt", args[0]);
         int totalSummoners = m.summonersActive.size() + m.summonersInactive.size();
         System.out.println("Found "+totalSummoners+" summoners, "+m.summonersInactive.size()+" inactive.");
         System.out.println("Found "+ m.games.size()+" games in total.");
@@ -81,11 +83,11 @@ public class Manager {
         //m.printMatrix(playedWith);
         m.writeGEXF(playedWith);
         var user = m.users.get(0);
-        //System.out.println("User: "+user.analyse);
+        //System.out.println("bot.User: "+user.analyse);
         displayGames(gamesByWeek(user.matches));
         //System.out.println(user.matches.last().time.toString());
         int[] avgGamesDay = new int[7];
-        for (User u: m.users) {
+        for (bot.User u: m.users) {
             var t = totalGamesPerDay(u.matches);
             //if (t == null) continue;
             for (int i= 0; i < 7; i++) {
@@ -144,7 +146,7 @@ public class Manager {
      */
     static List<Day[]> gamesByWeek(SortedSet<Game> matches) {
         SortedSet<Day> days = Manager.gamesPerDay(matches);
-        //"yyyy.MM.dd HH:mm"System.out.println(Util.dtf.print(days.last().time));
+        //"yyyy.MM.dd HH:mm"System.out.println(bot.Util.dtf.print(days.last().time));
 
         Day[] week = new Day[7];
         List<Day[]> listOfWeeks = new ArrayList<>();

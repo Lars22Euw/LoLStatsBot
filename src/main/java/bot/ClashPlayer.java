@@ -1,3 +1,5 @@
+package bot;
+
 import com.merakianalytics.orianna.types.common.Lane;
 import com.merakianalytics.orianna.types.core.championmastery.ChampionMasteries;
 import com.merakianalytics.orianna.types.core.championmastery.ChampionMastery;

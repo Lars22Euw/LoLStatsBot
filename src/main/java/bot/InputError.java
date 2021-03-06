@@ -1,3 +1,5 @@
+package bot;
+
 public class InputError extends Error {
 
     String error;

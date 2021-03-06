@@ -1,5 +1,6 @@
+package bot;
+
 import com.merakianalytics.orianna.types.common.Queue;
-import com.merakianalytics.orianna.types.core.match.Match;
 import com.merakianalytics.orianna.types.core.match.ParticipantStats;
 import com.merakianalytics.orianna.types.core.staticdata.Champion;
 import com.merakianalytics.orianna.types.core.summoner.Summoner;
@@ -13,7 +14,9 @@ import discord4j.core.spec.EmbedCreateSpec;
 import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
 import util.U;
-import util.UPair;
+import visual.ClashImageGenerator;
+import visual.FarmImageGenerator;
+import visual.ImageGenerator;
 
 import java.util.*;
 import java.util.function.Consumer;
@@ -51,7 +54,7 @@ public class Bot {
                     .equalsIgnoreCase(arguments.summoner.getName())).getStats()).collect(Collectors.toList());
             StringBuilder sb = new StringBuilder();
             if (arguments.image) {
-                ImageGenerator.farm(channel, U.zip(matchHistory, mhStats));
+                FarmImageGenerator.farm(channel, U.zip(matchHistory, mhStats));
                 return;
             }
             U.forEach(matchHistory, mhStats, (mh, st) -> {
@@ -94,7 +97,7 @@ public class Bot {
             return;
         }
         if (arguments.image) {
-            ImageGenerator.clash(resp, channel);
+            ClashImageGenerator.clash(resp, channel);
         } else {
             StringBuilder sb = new StringBuilder();
             for (var line: resp) {
@@ -181,13 +184,13 @@ public class Bot {
                         {"-t TIME", "months in the past until now: 2m"}};
                 messageSpec.setEmbed(setEmbed(".m .matches",
                         "`.m SUMS -c CHAMPS -q QUEUES -t TIME`\n" +
-                                "Arguments are space separated, use `,` within args\n" +
+                                "bot.Arguments are space separated, use `,` within args\n" +
                                 "`.matches Lars -c Garen,Teemo`", fields));
             }).block();
         } else if (m.getContent().get().toLowerCase().contains("stalk")) {
             messageChannel.createMessage(messageSpec -> {
                 final String[][] fields = {
-                        {"SUM", "Player or shorthand: `Lars` or `FoxDrop`"},
+                        {"SUM", "bot.Player or shorthand: `Lars` or `FoxDrop`"},
                         {"-g MIN", "min games together : `2`"},
                         {"-q QUEUES", "Queues or shorthands: `SR,ranked,ARAM`"},
                         {"-n GAMES", "games looked up (max 200) : `70`"}
@@ -206,7 +209,17 @@ public class Bot {
                         {"-i", "Add -i to receive and image based response"}};
                 messageSpec.setEmbed(setEmbed(".c .clash",
                         "`.c SUMS`\n" +
-                                "Arguments are space separated, use `,` within args\n" +
+                                "bot.Arguments are space separated, use `,` within args\n" +
+                                "`.clash Lars,Thomas,TeemoMain`\n"+
+                                "Based on recent games and champion mastery", fields));
+            }).block();
+        } else if (m.getContent().get().toLowerCase().contains("farm")) {
+            messageChannel.createMessage(messageSpec -> {
+                final String[][] fields = {
+                        {"SUMS", "List of players or shorthands: Lars,FoxDrop"}};
+                messageSpec.setEmbed(setEmbed(".c .clash",
+                        "`.f `\n" +
+                                "bot.Arguments are space separated, use `,` within args\n" +
                                 "`.clash Lars,Thomas,TeemoMain`\n"+
                                 "Based on recent games and champion mastery", fields));
             }).block();
@@ -220,7 +233,7 @@ public class Bot {
                 };
                 messageSpec.setEmbed(setEmbed("LoL Stats Commands",
                         "You can dm this bot.\n" +
-                                "Arguments are space separated, use `,` within args\n" +
+                                "bot.Arguments are space separated, use `,` within args\n" +
                                 "`.matches Lars -c Garen,Teemo`", fields));
             }).block();
         }
