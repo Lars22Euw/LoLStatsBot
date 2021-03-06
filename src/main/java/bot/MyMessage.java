@@ -1,3 +1,5 @@
+package bot;
+
 import com.merakianalytics.orianna.types.common.Queue;
 import com.merakianalytics.orianna.types.core.match.MatchHistory;
 import com.merakianalytics.orianna.types.core.staticdata.Champion;

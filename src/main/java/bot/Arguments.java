@@ -1,3 +1,5 @@
+package bot;
+
 import com.merakianalytics.orianna.types.common.Queue;
 import com.merakianalytics.orianna.types.core.staticdata.Champion;
 import com.merakianalytics.orianna.types.core.summoner.Summoner;
@@ -18,7 +20,7 @@ public class Arguments {
 
     @Override
     public String toString() {
-        return "Arguments{" +
+        return "bot.Arguments{" +
                 "queues=" + U.mapAdd(queues, Enum::name) +
                 ", champions=" + U.mapAdd(champions, Champion::getName) +
                 ", summoners=" + U.mapAdd(summoners, Summoner::getName) +

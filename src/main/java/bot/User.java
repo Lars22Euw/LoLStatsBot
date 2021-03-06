@@ -1,9 +1,11 @@
+package bot;
+
 import com.merakianalytics.orianna.types.core.summoner.Summoner;
 
 import java.util.*;
 
 /**
- * a User may have multiple summoner names (Players) in the default region.
+ * a bot.User may have multiple summoner names (Players) in the default region.
  */
 public class User {
 

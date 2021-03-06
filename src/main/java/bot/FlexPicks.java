@@ -1,3 +1,5 @@
+package bot;
+
 import com.merakianalytics.orianna.Orianna;
 import com.merakianalytics.orianna.types.common.*;
 import com.merakianalytics.orianna.types.common.Queue;

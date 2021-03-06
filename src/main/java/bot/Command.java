@@ -1,3 +1,5 @@
+package bot;
+
 import discord4j.core.object.entity.Message;
 
 import java.util.function.Consumer;
