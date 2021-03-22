@@ -240,10 +240,11 @@ class MyMessage {
     static DateTime getDateMinus(int monthDelta, int day) {
         var time = DateTime.now();
         int x = time.getMonthOfYear() - monthDelta;
-        if (x < 0) {
+        if (x <= 0) {
             time = time.withYear(time.getYear()-1);
         }
-        var index = (x + 12) % 12;
+        var index = (x + 36) % 12;
+        if (index == 0) index = 12;
         var time2 = time.withMonthOfYear(index);
         return time2.withDayOfWeek(day);
     }
