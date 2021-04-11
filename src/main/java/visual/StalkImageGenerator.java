@@ -17,16 +17,16 @@ public class StalkImageGenerator extends ImageGenerator {
         var g = img.createGraphics();
         setBackground(g, background);
         g.setColor(GOLD);
-        makeTitle(g, "Stalk:");
-        makeSmallText(g, "Winrate by Role", 0.2, 0.1);
-        makeSmallText(g, "Winrate by Champion", 0.5, 0.1);
-        makeSmallText(g, "Winrate by Gamemode", 0.8, 0.1);
+        makeTitle(g, data.summoner.getName());
+        makeMediumText(g, "Winrate by Role", 0.1, 0.2);
+        makeMediumText(g, "Winrate by Champion", 0.4, 0.2);
+        makeMediumText(g, "Winrate by Gamemode", 0.7, 0.2);
         g.setColor(Color.LIGHT_GRAY);
-        g.fillArc(200, 200, 100, 100, 0, 60);
-        doublePie(g, 0.2, 0.5, 0.3, data.rolesData);
-        doublePie(g, 0.5, 0.5, 0.3, data.championsData);
-        // doublePie(g, 0.8, 0.5, 0.3, data.gamemodesData);
+        g.setColor(new Color(0, 100, 0));
 
+        doublePie(g, 0.3, 0.2, 0.2, data.rolesData);
+        doublePie(g, 0.6, 0.2, 0.2, data.championsData);
+        // doublePie(g, 0.8, 0.5, 0.3, data.gamemodesData);
         makeMessage(channel, img, "farm.png");
 
     }

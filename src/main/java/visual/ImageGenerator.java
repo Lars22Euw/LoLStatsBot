@@ -180,27 +180,30 @@ public class ImageGenerator {
         var winDataList = new ArrayList<>(winData);
         var ratio = winDataList.stream().map(WinData::getRatio).collect(Collectors.toList());
         final var totalGames = (double) U.mapSum(winDataList, WinData::getGames);
+        U.log(totalGames);
         var portion = winDataList.stream().map(WinData::getGames).map(games -> games / totalGames).collect(Collectors.toList());
         var labels = winDataList.stream().map(WinData::getLabel).collect(Collectors.toList());
-        doublePie(g, x, y, r, ratio, portion, labels);
+        doublePie(g, x, y, r, portion, ratio, labels);
     }
 
     static void doublePie(Graphics2D g, double x, double y, double r, List<Double> portions, List<Double> ratio, List<String> labels) {
-        var startEnd = new UPair<>(-90, 0);
+        var startEnd = new UPair<>(0, 0);
+        g.setColor(new Color(0, 100, 0));
+        g.fillArc((int) ((x - r / 2) * OUT_WIDTH), (int) ((y - r / 2) * OUT_WIDTH), (int) (r * OUT_WIDTH), (int) (r * OUT_WIDTH),
+                startEnd.first, 360);
+        g.setStroke(new BasicStroke(3));
         U.forEach(portions, ratio, (po, ra) -> {
-            var end = (int) (startEnd.first + po * 360);
-            g.setColor(new Color(0, 100, 0));
-            g.fillArc(
-                    (int) (x * OUT_WIDTH), (int) (y * OUT_HEIGHT), (int) (r * OUT_WIDTH), (int) (r * OUT_WIDTH),
-                    startEnd.first, end);
+            U.log(po, ra);
             g.setColor(new Color(100, 0, 0));
-            final var innerRadius = (int) (r * OUT_WIDTH * (Math.sqrt(ra) + ra) / 2.0);
-            if (innerRadius > 0) {
-                g.fillArc(
-                        (int) (x * OUT_WIDTH), (int) (y * OUT_HEIGHT), innerRadius, innerRadius,
-                        startEnd.first, end);
+            var innerR = r * (Math.sqrt(ra) + ra) / 2.0;
+            if (innerR > 0) {
+                g.fillArc((int) ((x - innerR / 2) * OUT_WIDTH), (int) ((y - innerR / 2) * OUT_WIDTH), (int) (innerR * OUT_WIDTH), (int) (innerR * OUT_WIDTH),
+                        startEnd.first, (int) (po * 360));
+                g.setColor(Color.BLACK);
+                g.drawArc((int) ((x - innerR / 2) * OUT_WIDTH), (int) ((y - innerR / 2) * OUT_WIDTH), (int) (innerR * OUT_WIDTH), (int) (innerR * OUT_WIDTH),
+                        startEnd.first, (int) (po * 360));
             }
-            startEnd.first = startEnd.first + end;
+            startEnd.first = startEnd.first + (int) (po * 360);
         });
     }
 
@@ -214,6 +217,14 @@ public class ImageGenerator {
         g.setFont(g.getFont().deriveFont(g.getFont().getSize() / 3f));
         g.drawString(message, (int) (OUT_WIDTH * x), (int) (OUT_HEIGHT * y));
         g.setFont(g.getFont().deriveFont(g.getFont().getSize() * 3f));
+    }
+
+
+    static void makeMediumText(Graphics2D g, String message, double x, double y) {
+        g.setStroke(new BasicStroke(0));
+        g.setFont(g.getFont().deriveFont(g.getFont().getSize() / 2f));
+        g.drawString(message, (int) (OUT_WIDTH * x), (int) (OUT_HEIGHT * y));
+        g.setFont(g.getFont().deriveFont(g.getFont().getSize() * 2f));
     }
 
     static void makeMessage(MessageChannel channel, BufferedImage img, String s) {
