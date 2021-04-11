@@ -148,12 +148,12 @@ public class U {
         return mapReduceSkipNull(input, T::toString, (acc, s) -> acc + delimiter + s);
     }
 
-    public static <T, R> R mapAdd(List<T> input, Function<T, R> map) {
+    public static <T, R> R mapSum(List<T> input, Function<T, R> map) {
         if (input.isEmpty()) return null;
-        return mapAdd(input.subList(1, input.size()), map, map.apply(input.get(0)));
+        return mapSum(input.subList(1, input.size()), map, map.apply(input.get(0)));
     }
 
-    public static <T, R> R mapAdd(List<T> input, Function<T, R> map, R rBase) {
+    public static <T, R> R mapSum(List<T> input, Function<T, R> map, R rBase) {
         if (input.isEmpty()) return rBase;
         try {
             BiFunction<R, R, R> add =
@@ -282,7 +282,7 @@ public class U {
         return result;
     }
 
-    public static <T, R> void forEach(Collection<T> inputT, List<R> inputR, BiConsumer<T, R> biConsumer) {
+    public static <T, R> void forEach(Collection<T> inputT, Collection<R> inputR, BiConsumer<T, R> biConsumer) {
         Iterator<R> rit = inputR.iterator();
         Iterator<T> tit = inputT.iterator();
         while (tit.hasNext() && rit.hasNext()) {
@@ -290,8 +290,19 @@ public class U {
         }
     }
 
+    public static <T, R, S> void forEach(Collection<T> inputT, Collection<R> inputR, Collection<S> inputS, TriConsumer<T, R, S> triConsumer) {
+        Iterator<R> rit = inputR.iterator();
+        Iterator<T> tit = inputT.iterator();
+        Iterator<S> sit = inputS.iterator();
+        while (tit.hasNext() && rit.hasNext()) {
+            triConsumer.accept(tit.next(), rit.next(), sit.next());
+        }
+    }
+
+
     public static <T, R> void forEach(List<UPair<T, R>> pairs, BiConsumer<T, R> biConsumer) {
         pairs.forEach(p -> biConsumer.accept(p.first, p.second));
     }
+
 
 }

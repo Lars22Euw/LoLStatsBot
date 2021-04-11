@@ -178,8 +178,8 @@ class MyMessage {
     }
 
     public static String stalk(Summoner sum, int gamesTogether, List<Queue> queues, int historySize) {
-        historySize = Math.min(historySize, 200);
         StringBuilder output = new StringBuilder();
+        historySize = Math.min(historySize, 200);
         MatchHistory games;
 
         if (queues.size() == 0) {
@@ -188,7 +188,7 @@ class MyMessage {
             games = MatchHistory.forSummoner(sum).withQueues(queues).withEndIndex(historySize).get();
         }
 
-        var gamesFiltered = Player.lookup(games, sum).entrySet().stream().
+        ArrayList<Entry<String, Pair>> gamesFiltered = Player.lookup(games, sum).entrySet().stream().
                 filter(e -> e.getValue().games > gamesTogether).
                 sorted(Entry.comparingByValue()).
                 collect(Collectors.toCollection(ArrayList::new));

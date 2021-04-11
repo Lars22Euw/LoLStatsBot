@@ -1,6 +1,8 @@
 package bot;
 
 import com.merakianalytics.orianna.types.common.Queue;
+import com.merakianalytics.orianna.types.core.match.Match;
+import com.merakianalytics.orianna.types.core.match.MatchHistory;
 import com.merakianalytics.orianna.types.core.match.ParticipantStats;
 import com.merakianalytics.orianna.types.core.staticdata.Champion;
 import com.merakianalytics.orianna.types.core.summoner.Summoner;
@@ -17,6 +19,7 @@ import util.U;
 import visual.ClashImageGenerator;
 import visual.FarmImageGenerator;
 import visual.ImageGenerator;
+import visual.StalkImageGenerator;
 
 import java.util.*;
 import java.util.function.Consumer;
@@ -82,10 +85,25 @@ public class Bot {
     }
 
     private void stalk(Arguments arguments, MessageChannel c) {
+        if (arguments.image) {
+            var matches = findMatches(arguments);
+            StalkImageGenerator.stalk(c, new StalkDataset(arguments.summoner, matches));
+            return;
+        }
         var resp = MyMessage.stalk(arguments);
         var title = Bot.buildTitle("Stalk for: ", List.of(arguments.summoner), arguments.queues, null, null);
         System.out.println(title + " ; " + resp);
         c.createMessage(title + "```" + resp + "```").block();
+    }
+
+    private List<Match> findMatches(Arguments arguments) {
+        var historySize = Math.min(arguments.games, 200);
+
+        if (arguments.queues.size() == 0) {
+            return MatchHistory.forSummoner(arguments.summoner).withEndIndex(historySize).get();
+        } else {
+            return MatchHistory.forSummoner(arguments.summoner).withQueues(arguments.queues).withEndIndex(historySize).get();
+        }
     }
 
     private void clash(Arguments arguments, MessageChannel channel) {

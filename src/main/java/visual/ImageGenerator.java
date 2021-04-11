@@ -1,15 +1,19 @@
 package visual;
 
 import bot.ClashTeam;
+import bot.WinData;
 import com.merakianalytics.orianna.types.core.match.Match;
 import com.merakianalytics.orianna.types.core.match.ParticipantStats;
+import com.merakianalytics.orianna.types.core.staticdata.Champion;
 import discord4j.core.object.entity.MessageChannel;
+import org.apache.commons.lang3.tuple.Pair;
 import util.U;
 import util.UPair;
 
 import javax.imageio.IIOException;
 import javax.imageio.ImageIO;
 import java.awt.*;
+import java.util.ArrayList;
 import java.util.List;
 import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
@@ -17,8 +21,9 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.util.SortedSet;
 import java.util.function.Function;
-
+import java.util.stream.Collectors;
 
 
 public class ImageGenerator {
@@ -170,6 +175,35 @@ public class ImageGenerator {
     static void doubleRect(Graphics2D g, double x, double y, double dx, double dy) {
         g.fillRect((int) (x * OUT_WIDTH), (int) (y * OUT_HEIGHT), (int) (dx * OUT_WIDTH), (int) (dy * OUT_HEIGHT));
     }
+
+    static <T> void doublePie(Graphics2D g, double x, double y, double r, SortedSet<WinData<T>> winData) {
+        var winDataList = new ArrayList<>(winData);
+        var ratio = winDataList.stream().map(WinData::getRatio).collect(Collectors.toList());
+        final var totalGames = (double) U.mapSum(winDataList, WinData::getGames);
+        var portion = winDataList.stream().map(WinData::getGames).map(games -> games / totalGames).collect(Collectors.toList());
+        var labels = winDataList.stream().map(WinData::getLabel).collect(Collectors.toList());
+        doublePie(g, x, y, r, ratio, portion, labels);
+    }
+
+    static void doublePie(Graphics2D g, double x, double y, double r, List<Double> portions, List<Double> ratio, List<String> labels) {
+        var startEnd = new UPair<>(-90, 0);
+        U.forEach(portions, ratio, (po, ra) -> {
+            var end = (int) (startEnd.first + po * 360);
+            g.setColor(new Color(0, 100, 0));
+            g.fillArc(
+                    (int) (x * OUT_WIDTH), (int) (y * OUT_HEIGHT), (int) (r * OUT_WIDTH), (int) (r * OUT_WIDTH),
+                    startEnd.first, end);
+            g.setColor(new Color(100, 0, 0));
+            final var innerRadius = (int) (r * OUT_WIDTH * (Math.sqrt(ra) + ra) / 2.0);
+            if (innerRadius > 0) {
+                g.fillArc(
+                        (int) (x * OUT_WIDTH), (int) (y * OUT_HEIGHT), innerRadius, innerRadius,
+                        startEnd.first, end);
+            }
+            startEnd.first = startEnd.first + end;
+        });
+    }
+
     static void doubleRectBorder(Graphics2D g, double x, double y, double dx, double dy) {
         g.drawRect((int) (x * OUT_WIDTH), (int) (y * OUT_HEIGHT), (int) (dx * OUT_WIDTH), (int) (dy * OUT_HEIGHT));
     }

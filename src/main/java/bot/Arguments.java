@@ -21,9 +21,9 @@ public class Arguments {
     @Override
     public String toString() {
         return "bot.Arguments{" +
-                "queues=" + U.mapAdd(queues, Enum::name) +
-                ", champions=" + U.mapAdd(champions, Champion::getName) +
-                ", summoners=" + U.mapAdd(summoners, Summoner::getName) +
+                "queues=" + U.mapSum(queues, Enum::name) +
+                ", champions=" + U.mapSum(champions, Champion::getName) +
+                ", summoners=" + U.mapSum(summoners, Summoner::getName) +
                 ", summoner=" + summoner.getName() +
                 ", gamesTogether=" + gamesTogether +
                 ", image=" + image +
