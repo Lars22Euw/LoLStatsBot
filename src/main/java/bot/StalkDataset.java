@@ -14,12 +14,13 @@ public class StalkDataset {
 
     public Summoner summoner;
 
+    // Need sorted Sorted List
     public SortedSet<WinData<Champion>> championsData = new TreeSet<>(
         Comparator.comparing(data -> - (data.getWins()*1.0 /data.getGames())));
     public SortedSet<WinData<Queue>> gamemodesData = new TreeSet<>(
-            Comparator.comparing(data -> data.getKey().toString()));
+            Comparator.comparing(data -> - (data.getWins()*1.0 /data.getGames())));
     public SortedSet<WinData<StalkRole>> rolesData = new TreeSet<>(
-            Comparator.comparingInt(data -> data.getKey().ordinal()));
+            Comparator.comparing(data -> - (data.getWins()*1.0 /data.getGames())));
     public SortedSet<WinData<String>> playersData = new TreeSet<>(
             Comparator.comparing(WinData::getKey));
 
@@ -45,11 +46,22 @@ public class StalkDataset {
                 matches.stream().collect(Collectors.groupingBy(Match::getQueue)).entrySet()
                 .stream().map(winDataFunction(summoner)).collect(Collectors.toList()));
 
-        championsData.addAll(
-                matches.stream().collect(Collectors.groupingBy(m -> m.getParticipants().find(p -> p.getSummoner().getName().equals(summoner.getName())).getChampion())).entrySet()
-                        .stream().map(winDataFunction(summoner)).collect(Collectors.toList()));
+        final var entries = matches.stream().collect(
+                Collectors.groupingBy(m -> m.getParticipants()
+                        .find(p -> p.getSummoner().getName().equals(summoner.getName())).getChampion())
+        );
+        final var entries1 = entries.entrySet();
+
+        List<WinData<Champion>> list = new ArrayList<>();
+        Function<Map.Entry<Champion, List<Match>>, WinData<Champion>> mapper = winDataFunction(summoner);
+        for (Map.Entry<Champion, List<Match>> championListEntry : entries1) {
+            WinData<Champion> championWinData = mapper.apply(championListEntry);
+            list.add(championWinData);
+        }
+        championsData.addAll(list);
+        // Currently games with Lane.None are removed from the dataset
         rolesData.addAll(
                 matches.stream().collect(Collectors.groupingBy(m -> StalkRole.findRole(m, summoner))).entrySet()
-                        .stream().map(winDataFunction(summoner)).collect(Collectors.toList()));
+                        .stream().filter(e -> !e.getKey().equals(StalkRole.NONE)).map(winDataFunction(summoner)).collect(Collectors.toList()));
     }
 }

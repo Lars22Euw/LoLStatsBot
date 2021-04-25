@@ -1,10 +1,8 @@
 package bot;
 
+import com.merakianalytics.orianna.types.common.Queue;
 import com.merakianalytics.orianna.types.core.staticdata.Champion;
 import util.Triple;
-import util.UPair;
-
-import java.util.Queue;
 
 public class WinData<T> extends Triple<T, Integer, Integer> {
 
@@ -40,6 +38,19 @@ public class WinData<T> extends Triple<T, Integer, Integer> {
         } else {
             throw new UnsupportedOperationException();
         }
-        return key + " " + getWins() +  "/" + getGames() + " (" + Math.round(getRatio() * 100) + "%)";
+        return key + " " + getWins() +  "W/" + (getGames() - getWins()) + "L (" + Math.round(getRatio() * 100) + "%)";
+    }
+
+    public String getImages() {
+        if (first instanceof StalkRole) {
+            return queueImage((StalkRole) first, "Diamond");
+        } else {
+            return null;
+        }
+    }
+
+    private String queueImage(StalkRole role, String ranking) {
+        final var roleName = role.toString();
+        return String.format("ranked-position-icons/Position_%s-%s.png", ranking, roleName.substring(0, 1) + roleName.substring(1).toLowerCase());
     }
 }

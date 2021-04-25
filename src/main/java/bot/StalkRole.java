@@ -1,5 +1,6 @@
 package bot;
 
+import com.merakianalytics.orianna.types.common.Lane;
 import com.merakianalytics.orianna.types.common.Role;
 import com.merakianalytics.orianna.types.core.match.Match;
 import com.merakianalytics.orianna.types.core.summoner.Summoner;
@@ -9,10 +10,9 @@ public enum StalkRole {
     TOP,
     JUNGLE,
     MID,
-    BOT_CARRY,
+    BOT,
     SUPPORT,
     NONE;
-
 
     public static StalkRole findRole(Match m, Summoner summoner) {
         var participant= m.getParticipants().find(p -> p.getSummoner().getName().equals(summoner.getName()));
@@ -22,7 +22,7 @@ public enum StalkRole {
             case TOP -> StalkRole.TOP;
             case JUNGLE -> StalkRole.JUNGLE;
             case MID, MIDDLE -> StalkRole.MID;
-            case BOT, BOTTOM -> (role == Role.DUO_CARRY) ? BOT_CARRY : SUPPORT;
+            case BOT, BOTTOM -> (role == Role.DUO_CARRY) ? BOT : SUPPORT;
             case NONE -> StalkRole.NONE;
         };
     }

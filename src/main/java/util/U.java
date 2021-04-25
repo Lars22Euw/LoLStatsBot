@@ -125,8 +125,8 @@ public class U {
     }
 
     private static void _log(PrintStream out, Object... objects) {
-        int callersLineNumber = Thread.currentThread().getStackTrace()[3].getLineNumber();
-        String className = Thread.currentThread().getStackTrace()[3].getClassName();
+        int callersLineNumber = Thread.currentThread().getStackTrace()[4].getLineNumber();
+        String className = Thread.currentThread().getStackTrace()[4].getClassName();
         out.println('[' + className + ":" + callersLineNumber + ']' + " " +
                 join(new ArrayList<>(Arrays.asList(objects))));
     }
@@ -259,6 +259,24 @@ public class U {
 
     public static <T> Stream<UEnumerator<T>> enumerate(List<T> c) {
         return IntStream.range(0, c.size()).mapToObj(i -> UEnumerator.of(i, c.get(i)));
+    }
+
+    public static <T> void enumerateForEach(Collection<T> input, BiConsumer<Integer, T> consumer) {
+        Iterator<T> it = input.iterator();
+        for (var i = 0; i < input.size(); i++) {
+            consumer.accept(i, it.next());
+        }
+    }
+
+    public static <T, R> void enumerateForEach(Collection<T> inputT, Collection<R> inputR, TriConsumer<Integer, T, R> consumer) {
+        Iterator<T> tit = inputT.iterator();
+        Iterator<R> rit = inputR.iterator();
+        if (inputR.size() != inputT.size()) {
+            throw new IllegalArgumentException("Lists do not have same size!");
+        }
+        for (var i = 0; i < inputT.size(); i++) {
+            consumer.accept(i, tit.next(), rit.next());
+        }
     }
 
     public static <T> T randomEntry(List<T> inputT) {

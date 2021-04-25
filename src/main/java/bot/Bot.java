@@ -31,7 +31,7 @@ public class Bot {
 
     private static final String PREFIX = ".";
 
-    private final DiscordClient client;
+    protected final DiscordClient client;
     private final Manager manager;
 
     private final List<Command> commands = List.of(
@@ -295,7 +295,7 @@ public class Bot {
         s.client.login().block();
     }
 
-    private void getCommands(DiscordClient client) {
+    protected void getCommands(DiscordClient client) {
         client.getEventDispatcher().on(MessageCreateEvent.class)
                 .subscribe(event -> {
                     var msgText = event.getMessage().getContent().orElse(null);

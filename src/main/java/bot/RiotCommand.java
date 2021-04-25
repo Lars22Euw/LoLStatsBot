@@ -55,33 +55,26 @@ public class RiotCommand extends Command {
         for (int index = 1; index < tokens.length; index++) {
             try {
                 switch (tokens[index]) {
-                    default: {
+                    default -> {
                         summoners.addAll(MyMessage.parseSummoners(tokens[index]));
-                        break;
                     }
-                    case "-t": { // with TIME
+                    case "-t" -> { // with TIME
                         startDate = MyMessage.parseTime(tokens[++index]);
-                        break;
                     }
-                    case "-c": { // with CHAMPION
+                    case "-c" -> { // with CHAMPION
                         champions.addAll(MyMessage.parseChamps(tokens[++index]));
-                        break;
                     }
-                    case "-g": { // with GamesTogether
+                    case "-g" -> { // with GamesTogether
                         gamesTogether = Integer.parseInt(tokens[++index]);
-                        break;
                     }
-                    case "-n": { // with Games
+                    case "-n" -> { // with Games
                         games = Integer.parseInt(tokens[++index]);
-                        break;
                     }
-                    case "-q": { // with QUEUE
+                    case "-q" -> { // with QUEUE
                         queues = MyMessage.parseQueues(tokens[++index]);
-                        break;
                     }
-                    case "-i": { // as image
+                    case "-i" -> { // as image
                         image = true;
-                        break;
                     }
                 }
             } catch (InputError e) {
