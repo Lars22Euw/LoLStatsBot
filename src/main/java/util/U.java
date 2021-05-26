@@ -323,4 +323,27 @@ public class U {
     }
 
 
+    // ToDo: prettify
+    public static Double getMinimum(String[] resp, Function<String, Double> extractValue) {
+        return getExtremum(true, resp, extractValue);
+    }
+
+    public static Double getMaximum(String[] resp, Function<String, Double> extractValue) {
+        return getExtremum(false, resp, extractValue);
+    }
+
+    private static Double getExtremum(boolean isMinimum, String[] resp, Function<String, Double> extractValue) {
+        var result = isMinimum ? Double.MAX_VALUE : Double.MIN_VALUE;
+        for (var entry : resp) {
+            var score = extractValue.apply(entry);
+            if (isMinimum ? (score < result) : (score > result)) {
+                result = score;
+            }
+        }
+        return result;
+    }
+
+    public static Function<String, Double> splitSelectAtSemicolon(int i) {
+        return s -> Double.parseDouble(s.split(";")[i]);
+    }
 }

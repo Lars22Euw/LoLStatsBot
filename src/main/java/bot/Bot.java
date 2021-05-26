@@ -267,7 +267,7 @@ public class Bot {
         };
     }
 
-    Bot(String riotAPI, String discordAPI) {
+    public Bot(String riotAPI, String discordAPI) {
         manager = new Manager(riotAPI);
         client = new DiscordClientBuilder(discordAPI).build();
     }

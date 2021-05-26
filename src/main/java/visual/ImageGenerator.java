@@ -1,30 +1,17 @@
 package visual;
 
-import bot.ClashTeam;
-import bot.StalkRole;
-import bot.WinData;
-import com.merakianalytics.orianna.types.core.match.Match;
-import com.merakianalytics.orianna.types.core.match.ParticipantStats;
-import com.merakianalytics.orianna.types.core.staticdata.Champion;
 import discord4j.core.object.entity.MessageChannel;
-import org.apache.commons.lang3.tuple.Pair;
-import util.U;
-import util.UPair;
+import bot.WinData;
+import util.*;
 
-import javax.imageio.IIOException;
-import javax.imageio.ImageIO;
+import java.io.*;
+import javax.imageio.*;
 import java.awt.*;
-import java.util.ArrayList;
-import java.util.List;
 import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.IOException;
-import java.util.Objects;
-import java.util.SortedSet;
-import java.util.function.Function;
+import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.stream.Collectors;
 
 
@@ -36,21 +23,28 @@ public class ImageGenerator {
     public static final BufferedImage recently = readImage("recently.png");
     public static final int BACKGROUND_HEIGHT = (background == null) ? 280 : background.getHeight();
     public static final int BACKGROUND_WIDTH = (background == null) ? 498 : background.getWidth();
+
+    public static final int CHAMPION_SQUARE_SIZE = 120;
     public static final int OUT_WIDTH = BACKGROUND_WIDTH * BG_SCALE;
     public static final int OUT_HEIGHT = BACKGROUND_HEIGHT * BG_SCALE;
-    public static final int CHAMPION_SQUARE_SIZE = 120;
     public static final int LINE_WIDTH = OUT_WIDTH / 500;
+
+    private static double currentY;
     public static final Color GOLD = new Color(173, 136, 0);
     public static final Color GREEN = new Color(0, 60, 0);
     public static final Color RED = new Color(60, 0, 0);
-    private static double currentY;
 
-    static BufferedImage createScaledBufferedImage(BufferedImage background, int scale) {
-        int w = background.getWidth() * scale;
-        int h = background.getHeight() * scale;
-        return new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
+    public ImageGenerator() {
+        var img = createScaledBufferedImage(background, BG_SCALE);
+        var g = img.createGraphics();
+        setBackground(g);
     }
 
+    static BufferedImage createScaledBufferedImage(BufferedImage image, int scale) {
+        int w = image.getWidth() * scale;
+        int h = image.getHeight() * scale;
+        return new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
+    }
 
     /**
      * fills an arrow on the graphics object
@@ -119,30 +113,6 @@ public class ImageGenerator {
         g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1f));
     }
 
-    static Function<String, Double> splitSelectAtSemicolon(int i) {
-        return s -> Double.parseDouble(s.split(";")[i]);
-    }
-
-
-    // ToDo: prettify
-    static Double getMinimum(String[] resp, Function<String, Double> extractValue) {
-        return getExtremum(true, resp, extractValue);
-    }
-
-    static Double getMaximum(String[] resp, Function<String, Double> extractValue) {
-        return getExtremum(false, resp, extractValue);
-    }
-
-    private static Double getExtremum(boolean isMinimum, String[] resp, Function<String, Double> extractValue) {
-        var result = isMinimum ? Double.MAX_VALUE : Double.MIN_VALUE;
-        for (var entry : resp) {
-            var score = extractValue.apply(entry);
-            if (isMinimum ? (score < result) : (score > result)) {
-                result = score;
-            }
-        }
-        return result;
-    }
 
     static void makeTitle(Graphics2D g, String s) {
         g.setFont(new Font("Calibri", Font.PLAIN, 12));
@@ -157,24 +127,28 @@ public class ImageGenerator {
     }
 
     private static BufferedImage readImage(MessageChannel channel, String s) {
-        BufferedImage image = null;
+        final BufferedImage img;
         try {
-            image = ImageIO.read(new File("res/" + s));
+            return ImageIO.read(new File("res/" + s));
         } catch (IIOException e) {
             U.log(System.err, "Image " + s + " not found in res/");
-            return null;
         } catch (IOException e) {
             if (channel != null)
                 channel.createMessage("Error when loading icon at res/" + s).block();
             e.printStackTrace();
+        } finally {
+            img = new BufferedImage(256, 256, BufferedImage.TYPE_INT_RGB);
+            var g = img.getGraphics();
+            g.setColor(Color.white);
+            g.drawString(s, 128, 128);
         }
-        return image;
+        return img;
     }
 
-    static void setBackground(Graphics2D g, BufferedImage image) {
+    static void setBackground(Graphics2D g) {
         AffineTransform at = new AffineTransform();
         at.scale(BG_SCALE, BG_SCALE);
-        g.drawImage(image, at, null);
+        g.drawImage(ImageGenerator.background, at, null);
     }
 
     static void doubleRect(Graphics2D g, double x, double y, double dx, double dy) {

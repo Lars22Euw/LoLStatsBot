@@ -15,7 +15,7 @@ public class FarmImageGenerator extends ImageGenerator {
     public static void farm(MessageChannel channel, List<UPair<Match, ParticipantStats>> data) {
         var img = new BufferedImage( BACKGROUND_WIDTH * BG_SCALE, BACKGROUND_HEIGHT * BG_SCALE, BufferedImage.TYPE_INT_ARGB);
         var g = img.createGraphics();
-        setBackground(g, background);
+        setBackground(g);
         g.setColor(GOLD);
         makeTitle(g, "CreepScore:");
         makeSmallText(g, "cs/min", 0.01, 0.33);
