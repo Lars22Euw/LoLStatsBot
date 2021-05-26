@@ -45,7 +45,7 @@ public class ClashBan implements Comparable<ClashBan> {
 
     @Override
     public String toString() {
-        String champ = Util.asString(champion.getName(), 16);
+        String champ = Util.asString(champion.getKey(), 16);
         StringBuilder sb = new StringBuilder();
         sb.append("[");
 

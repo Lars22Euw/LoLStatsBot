@@ -107,7 +107,7 @@ public class Bot {
     }
 
     private void clash(Arguments arguments, MessageChannel channel) {
-        String[] resp = new String[0];
+        String[] resp;
         try {
             resp = new MyMessage(manager).clash(arguments);
         } catch (IllegalArgumentException e) {
@@ -115,14 +115,14 @@ public class Bot {
             return;
         }
         if (arguments.image) {
-            ClashImageGenerator.clash(resp, channel);
+            new ClashImageGenerator(resp, channel);
         } else {
             StringBuilder sb = new StringBuilder();
             for (var line: resp) {
                 sb.append(line).append("\n");
             }
-            System.out.println("Clash: "+sb.toString());
-            channel.createMessage("```" + "\nBans in order:\n" + sb.toString() + "```").block();
+            System.out.println("Clash: \n"+ sb);
+            channel.createMessage("```" + "\nBans in order:\n" + sb + "```").block();
         }
     }
 

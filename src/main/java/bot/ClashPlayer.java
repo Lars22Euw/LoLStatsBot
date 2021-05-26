@@ -41,8 +41,8 @@ public class ClashPlayer extends Player {
 
     public ClashPlayer(Summoner sum) {
         super();
-        super.summoner = sum;
-        super.name = sum.getName();
+        summoner = sum;
+        name = sum.getName();
         if (sum.getName().length() > SUMMONER_NAME_SIZE)
             SUMMONER_NAME_SIZE = sum.getName().length();
         now = DateTime.now();

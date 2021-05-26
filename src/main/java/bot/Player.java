@@ -21,7 +21,6 @@ public class Player {
     private static final String folder = "summoners\\";
 
     public Player() {
-        System.out.println("empty constructor called.");
     }
 
     public Player(Summoner sum, Manager manager) {
