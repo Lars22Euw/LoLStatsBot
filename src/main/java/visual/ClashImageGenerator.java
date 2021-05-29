@@ -1,12 +1,12 @@
 package visual;
 
 import bot.ClashTeam;
-import com.merakianalytics.orianna.types.common.Queue;
-import com.merakianalytics.orianna.types.common.Season;
+import com.merakianalytics.orianna.types.core.staticdata.Champion;
 import com.merakianalytics.orianna.types.core.summoner.Summoner;
 import discord4j.core.object.entity.MessageChannel;
 import util.U;
 
+import java.awt.*;
 import java.awt.geom.AffineTransform;
 
 public class ClashImageGenerator extends ImageGenerator {
@@ -58,5 +58,31 @@ public class ClashImageGenerator extends ImageGenerator {
             y += championListHeight / 4.0;
         }
         makeMessage(channel, img, "clash.png");
+    }
+
+    static void drawChampionWithReasons(Graphics2D g, double x, double y, double championSquareScale, String championName, float scoreRecently, float scoreMastery) {
+
+        var masteryScale = championSquareScale * 1.1;
+        var recentlyScale = championSquareScale * 0.42;
+
+        var champion = Champion.named(championName).get().getImage().get();
+        AffineTransform atc = new AffineTransform();
+        atc.translate(x, y);
+        atc.scale(championSquareScale, championSquareScale);
+        g.drawImage(champion, atc, null);
+
+        g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, scoreMastery));
+        AffineTransform atm = new AffineTransform();
+        atm.translate(x + CHAMPION_SQUARE_SIZE * 7.0 / 24 * championSquareScale - 80 * masteryScale / 2, y + (CHAMPION_SQUARE_SIZE + 5) * championSquareScale);
+        atm.scale(masteryScale, masteryScale);
+        g.drawImage(mastery, atm, null);
+
+        g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, scoreRecently));
+        AffineTransform atr = new AffineTransform();
+        atr.translate(x + CHAMPION_SQUARE_SIZE * 17.0 / 24 * championSquareScale - 100 * recentlyScale / 2, y + (CHAMPION_SQUARE_SIZE + 5) * championSquareScale);
+        atr.scale(recentlyScale, recentlyScale);
+        g.drawImage(recently, atr, null);
+
+        g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1f));
     }
 }

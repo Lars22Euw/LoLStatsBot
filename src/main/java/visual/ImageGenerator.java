@@ -1,5 +1,6 @@
 package visual;
 
+import com.merakianalytics.orianna.types.core.staticdata.Champion;
 import discord4j.core.object.entity.MessageChannel;
 import bot.WinData;
 import util.*;
@@ -33,10 +34,12 @@ public class ImageGenerator {
     public static final Color GOLD = new Color(173, 136, 0);
     public static final Color GREEN = new Color(0, 60, 0);
     public static final Color RED = new Color(60, 0, 0);
+    final Graphics2D g;
+    final BufferedImage img;
 
     public ImageGenerator() {
-        var img = createScaledBufferedImage(background, BG_SCALE);
-        var g = img.createGraphics();
+        img = createScaledBufferedImage(background, BG_SCALE);
+        g = img.createGraphics();
         setBackground(g);
     }
 
@@ -89,37 +92,19 @@ public class ImageGenerator {
         return Math.sqrt(Math.pow(x, 2) + Math.pow(y, 2));
     }
 
-    static void drawChampionWithReasons(MessageChannel channel, Graphics2D g, double x, double y,
-                                        double championSquareScale, double masteryScale, double recentlyScale,
-                                        String championName, float scoreRecently, float scoreMastery) {
-        BufferedImage champion = readImage(channel, championName + ".png");
-        AffineTransform atc = new AffineTransform();
-        atc.translate(x, y);
-        atc.scale(championSquareScale, championSquareScale);
-        g.drawImage(champion, atc, null);
-
-        g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, scoreMastery));
-        AffineTransform atm = new AffineTransform();
-        atm.translate(x + CHAMPION_SQUARE_SIZE * 7.0 / 24 * championSquareScale - 80 * masteryScale / 2, y + (CHAMPION_SQUARE_SIZE + 5) * championSquareScale);
-        atm.scale(masteryScale, masteryScale);
-        g.drawImage(mastery, atm, null);
-
-        g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, scoreRecently));
-        AffineTransform atr = new AffineTransform();
-        atr.translate(x + CHAMPION_SQUARE_SIZE * 17.0 / 24 * championSquareScale - 100 * recentlyScale / 2, y + (CHAMPION_SQUARE_SIZE + 5) * championSquareScale);
-        atr.scale(recentlyScale, recentlyScale);
-        g.drawImage(recently, atr, null);
-
-        g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1f));
+    public static boolean draw(Graphics2D g, BufferedImage img, double x, double y, double scale) {
+        var at = new AffineTransform();
+        at.translate(x, y);
+        at.scale(scale, scale);
+        return g.drawImage(img, at, null);
     }
 
 
     static void makeTitle(Graphics2D g, String s) {
-        g.setFont(new Font("Calibri", Font.PLAIN, 12));
-        Font newFont = g.getFont().deriveFont(g.getFont().getSize() * (float) BG_SCALE * 2.4f);
-        g.setFont(newFont);
+        g.setFont(new Font("Calibri", Font.PLAIN, (int) (12 * BG_SCALE * 2.4f)));
+        g.setColor(GOLD);
         g.drawString(s, (int) (OUT_WIDTH * 0.05), (int) (OUT_HEIGHT * 0.08) + g.getFont().getSize() / 2);
-        g.setFont(g.getFont().deriveFont(g.getFont().getSize() * 0.6f));
+        g.setFont(new Font("Calibri", Font.PLAIN, 12 * BG_SCALE));
     }
 
     private static BufferedImage readImage(String s) {
@@ -146,9 +131,7 @@ public class ImageGenerator {
     }
 
     static void setBackground(Graphics2D g) {
-        AffineTransform at = new AffineTransform();
-        at.scale(BG_SCALE, BG_SCALE);
-        g.drawImage(ImageGenerator.background, at, null);
+        draw(g, ImageGenerator.background, 0, 0, BG_SCALE);
     }
 
     static void doubleRect(Graphics2D g, double x, double y, double dx, double dy) {
