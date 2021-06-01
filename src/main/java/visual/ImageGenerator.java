@@ -1,6 +1,6 @@
 package visual;
 
-import com.merakianalytics.orianna.types.core.staticdata.Champion;
+import com.merakianalytics.orianna.types.core.summoner.Summoner;
 import discord4j.core.object.entity.MessageChannel;
 import bot.WinData;
 import util.*;
@@ -19,13 +19,14 @@ import java.util.stream.Collectors;
 public class ImageGenerator {
 
     public static final int BG_SCALE = 8;
-    public static final BufferedImage background = readImage("background.png");
-    public static final BufferedImage mastery = readImage("mastery.png");
-    public static final BufferedImage recently = readImage("recently.png");
+    public static final BufferedImage background = readImage("background.png", false);
+    public static final BufferedImage mastery = readImage("mastery.png", false);
+    public static final BufferedImage recently = readImage("recently.png", false);
     public static final int BACKGROUND_HEIGHT = (background == null) ? 280 : background.getHeight();
     public static final int BACKGROUND_WIDTH = (background == null) ? 498 : background.getWidth();
 
     public static final int CHAMPION_SQUARE_SIZE = 120;
+    public static final double CHAMPION_SQUARE_SCALE = 0.24 * BG_SCALE;
     public static final int OUT_WIDTH = BACKGROUND_WIDTH * BG_SCALE;
     public static final int OUT_HEIGHT = BACKGROUND_HEIGHT * BG_SCALE;
     public static final int LINE_WIDTH = OUT_WIDTH / 500;
@@ -37,28 +38,26 @@ public class ImageGenerator {
     final Graphics2D g;
     final BufferedImage img;
 
-    public ImageGenerator() {
-        img = createScaledBufferedImage(background, BG_SCALE);
+    public ImageGenerator(String title) {
+        int w = background.getWidth() * BG_SCALE;
+        int h = background.getHeight() * BG_SCALE;
+        img = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
         g = img.createGraphics();
-        setBackground(g);
-    }
-
-    static BufferedImage createScaledBufferedImage(BufferedImage image, int scale) {
-        int w = image.getWidth() * scale;
-        int h = image.getHeight() * scale;
-        return new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
+        draw(ImageGenerator.background, 0, 0, BG_SCALE);
+        g.setColor(GOLD);
+        g.setFont(new Font("Calibri", Font.PLAIN, (int) (12 * BG_SCALE * 2.4f)));
+        g.drawString(title, (int) (OUT_WIDTH * 0.05), (int) (OUT_HEIGHT * 0.08) + g.getFont().getSize() / 2);
+        g.setFont(new Font("Calibri", Font.PLAIN, 12 * BG_SCALE));
     }
 
     /**
      * fills an arrow on the graphics object
-     *
-     * @param g  graphic object
-     * @param x  double, relative position in image
+     *  @param x  double, relative position in image
      * @param y  double, relative position in image
      * @param dx double, relative offset in image
      * @param dy double, relative offset in image
      */
-    static void fillArrow(Graphics2D g, double x, double y, double dx, double dy) {
+    void fillArrow(double x, double y, double dx, double dy) {
         g.setStroke(new BasicStroke(LINE_WIDTH));
         final var xStart = (int) (x * OUT_WIDTH);
         final var yStart = (int) (y * OUT_HEIGHT);
@@ -92,7 +91,7 @@ public class ImageGenerator {
         return Math.sqrt(Math.pow(x, 2) + Math.pow(y, 2));
     }
 
-    public static boolean draw(Graphics2D g, BufferedImage img, double x, double y, double scale) {
+    public boolean draw(BufferedImage img, double x, double y, double scale) {
         var at = new AffineTransform();
         at.translate(x, y);
         at.scale(scale, scale);
@@ -100,65 +99,52 @@ public class ImageGenerator {
     }
 
 
-    static void makeTitle(Graphics2D g, String s) {
-        g.setFont(new Font("Calibri", Font.PLAIN, (int) (12 * BG_SCALE * 2.4f)));
-        g.setColor(GOLD);
-        g.drawString(s, (int) (OUT_WIDTH * 0.05), (int) (OUT_HEIGHT * 0.08) + g.getFont().getSize() / 2);
-        g.setFont(new Font("Calibri", Font.PLAIN, 12 * BG_SCALE));
-    }
-
-    private static BufferedImage readImage(String s) {
-        return readImage(null, s);
-    }
-
-    private static BufferedImage readImage(MessageChannel channel, String s) {
+    private static BufferedImage readImage(String s, boolean drawFallback) {
         final BufferedImage img;
         try {
             return ImageIO.read(new File("res/" + s));
         } catch (IIOException e) {
             U.log(System.err, "Image " + s + " not found in res/");
         } catch (IOException e) {
-            if (channel != null)
-                channel.createMessage("Error when loading icon at res/" + s).block();
             e.printStackTrace();
         } finally {
-            img = new BufferedImage(256, 256, BufferedImage.TYPE_INT_RGB);
-            var g = img.getGraphics();
-            g.setColor(Color.white);
-            g.drawString(s, 128, 128);
+            if (drawFallback) {
+                img = new BufferedImage(256, 256, BufferedImage.TYPE_INT_RGB);
+                var g = img.getGraphics();
+                g.setColor(Color.white);
+                g.drawString(s, 128, 128);
+            } else {
+                img = null;
+            }
         }
         return img;
     }
 
-    static void setBackground(Graphics2D g) {
-        draw(g, ImageGenerator.background, 0, 0, BG_SCALE);
-    }
-
-    static void doubleRect(Graphics2D g, double x, double y, double dx, double dy) {
+    void doubleRect(double x, double y, double dx, double dy) {
         g.fillRect((int) (x * OUT_WIDTH), (int) (y * OUT_HEIGHT), (int) (dx * OUT_WIDTH), (int) (dy * OUT_HEIGHT));
     }
 
-    static <T> void doublePie(Graphics2D g, double x, double y, double r, SortedSet<WinData<T>> winData) {
+    <T> void doublePie(double x, double y, double r, SortedSet<WinData<T>> winData) {
         var winDataList = new ArrayList<>(winData);
         var ratio = winDataList.stream().map(WinData::getRatio).collect(Collectors.toList());
         final var totalGames = (double) U.mapSum(winDataList, WinData::getGames);
         U.log(totalGames);
         var portion = winDataList.stream().map(WinData::getGames).map(games -> games / totalGames).collect(Collectors.toList());
         var labels = winDataList.stream().map(WinData::getLabel).collect(Collectors.toList());
-        doublePie(g, x, y, r, portion, ratio, labels);
+        doublePie(x, y, r, portion, ratio, labels);
     }
 
-    static void doubleBar(Graphics2D g, double x, double y, double width, double height, SortedSet<WinData<?>> winData) {
+    void doubleBar(double x, double y, double width, double height, SortedSet<WinData<?>> winData) {
         var winDataList = new ArrayList<>(winData);
         var ratio = winDataList.stream().map(WinData::getRatio).collect(Collectors.toList());
         final var totalGames = (double) U.mapSum(winDataList, WinData::getGames);
         var portion = winDataList.stream().map(WinData::getGames).map(games -> games / totalGames).collect(Collectors.toList());
         var labels = winDataList.stream().map(WinData::getLabel).collect(Collectors.toList());
-        var images = winDataList.stream().map(WinData::getImages).filter(Objects::nonNull).map(ImageGenerator::readImage).collect(Collectors.toList());
+        var images = winDataList.stream().map(WinData::getImages).filter(Objects::nonNull).map(s -> readImage(s, true)).collect(Collectors.toList());
         if (images.isEmpty()) {
-            doubleBar(g, x, y, width, height, portion, ratio, labels);
+            doubleBar(x, y, width, height, portion, ratio, labels);
         } else {
-            doubleBar(g, x, y, width, height, portion, ratio, images);
+            doubleBar(x, y, width, height, portion, ratio, images);
         }
     }
 
@@ -166,7 +152,7 @@ public class ImageGenerator {
      * @param portions Portion of games played with the Key Property (e.g. 0.3 -> 30% der Spiele mit Braum)
      * @param ratio    Win-Ratio in the games played with the Key Property (e.g. 0.5 -> 50% der Spiele mit Braum gewonnen)
      */
-    static void doubleBar(Graphics2D g, double x, double y, double width, double height, List<Double> portions, List<Double> ratio, List<?> labels) {
+    void doubleBar(double x, double y, double width, double height, List<Double> portions, List<Double> ratio, List<?> labels) {
         currentY = y;
         final var rectsStart = (int) (x * OUT_WIDTH);
         final double portionFactor = 1 - (portions.size() - 1) * 0.01;
@@ -188,13 +174,13 @@ public class ImageGenerator {
                 atc.scale(BG_SCALE * 0.3, BG_SCALE * 0.3);
                 g.drawImage((BufferedImage) label, atc, null);
             } else {
-                makeSmallText(g, (String) label, x + 0.08 * width, currentY + portionHeight / 2 + 0.006);
+                makeSmallText((String) label, x + 0.08 * width, currentY + portionHeight / 2 + 0.006);
             }
             currentY += portionHeight + 0.01;
         });
     }
 
-    static void doublePie(Graphics2D g, double x, double y, double r, List<Double> portions, List<Double> ratio, List<String> labels) {
+    void doublePie(double x, double y, double r, List<Double> portions, List<Double> ratio, List<String> labels) {
         var startEnd = new UPair<>(270, 0);
         g.setColor(new Color(0, 100, 0));
         g.fillArc((int) ((x - r / 2) * OUT_WIDTH), (int) ((y - r / 2) * OUT_WIDTH), (int) (r * OUT_WIDTH), (int) (r * OUT_WIDTH),
@@ -226,27 +212,33 @@ public class ImageGenerator {
         });
     }
 
-    static void doubleRectBorder(Graphics2D g, double x, double y, double dx, double dy) {
+    void doubleRectBorder(double x, double y, double dx, double dy) {
         g.drawRect((int) (x * OUT_WIDTH), (int) (y * OUT_HEIGHT), (int) (dx * OUT_WIDTH), (int) (dy * OUT_HEIGHT));
     }
 
+    void drawSummoner(String sum, double x, double y) {
+        var summoner = Summoner.named(sum).get();
+        var summIcon = summoner.getProfileIcon().getImage().get();
+        draw(summIcon, x - 256, y + 32, CHAMPION_SQUARE_SCALE * 0.36 * 300/summIcon.getWidth());
+        g.drawString(sum, (int) x, (int) (y + g.getFont().getSize() / 2 +  110 * CHAMPION_SQUARE_SCALE / 2));
+    }
 
-    static void makeSmallText(Graphics2D g, String message, double x, double y) {
+
+    void makeSmallText(String message, double x, double y) {
         g.setStroke(new BasicStroke(0));
         g.setFont(g.getFont().deriveFont(g.getFont().getSize() / 3f));
         g.drawString(message, (int) (OUT_WIDTH * x), (int) (OUT_HEIGHT * y));
         g.setFont(g.getFont().deriveFont(g.getFont().getSize() * 3f));
     }
 
-
-    static void makeMediumText(Graphics2D g, String message, double x, double y) {
+    void makeMediumText(String message, double x, double y) {
         g.setStroke(new BasicStroke(0));
         g.setFont(g.getFont().deriveFont(g.getFont().getSize() / 2f));
         g.drawString(message, (int) (OUT_WIDTH * x), (int) (OUT_HEIGHT * y) + g.getFont().getSize() / 2);
         g.setFont(g.getFont().deriveFont(g.getFont().getSize() * 2f));
     }
 
-    static void makeMessage(MessageChannel channel, BufferedImage img, String s) {
+    void makeMessage(MessageChannel channel, String filename) {
         ByteArrayOutputStream output = new ByteArrayOutputStream();
         try {
             ImageIO.write(img, "png", output);
@@ -255,6 +247,6 @@ public class ImageGenerator {
             e.printStackTrace();
         }
         channel.createMessage((messageCreateSpec) ->
-                messageCreateSpec.addFile(s, new ByteArrayInputStream(output.toByteArray()))).block();
+                messageCreateSpec.addFile(filename, new ByteArrayInputStream(output.toByteArray()))).block();
     }
 }

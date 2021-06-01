@@ -1,31 +1,23 @@
 package bot;
 
 import com.merakianalytics.orianna.types.common.Queue;
-import com.merakianalytics.orianna.types.core.match.Match;
-import com.merakianalytics.orianna.types.core.match.MatchHistory;
-import com.merakianalytics.orianna.types.core.match.ParticipantStats;
+import com.merakianalytics.orianna.types.core.match.*;
 import com.merakianalytics.orianna.types.core.staticdata.Champion;
 import com.merakianalytics.orianna.types.core.summoner.Summoner;
-import discord4j.core.DiscordClient;
-import discord4j.core.DiscordClientBuilder;
+import discord4j.core.*;
 import discord4j.core.event.domain.message.MessageCreateEvent;
-import discord4j.core.object.entity.Message;
-import discord4j.core.object.entity.MessageChannel;
+import discord4j.core.object.entity.*;
 import discord4j.core.object.util.Snowflake;
 import discord4j.core.spec.EmbedCreateSpec;
 import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
+
 import util.U;
-import visual.ClashImageGenerator;
-import visual.FarmImageGenerator;
-import visual.ImageGenerator;
-import visual.StalkImageGenerator;
+import visual.*;
 
 import java.util.*;
 import java.util.function.Consumer;
-import java.util.stream.Collector;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public class Bot {
 
@@ -57,7 +49,7 @@ public class Bot {
                     .equalsIgnoreCase(arguments.summoner.getName())).getStats()).collect(Collectors.toList());
             StringBuilder sb = new StringBuilder();
             if (arguments.image) {
-                FarmImageGenerator.farm(channel, U.zip(matchHistory, mhStats));
+                new FarmImageGenerator(channel, U.zip(matchHistory, mhStats));
                 return;
             }
             U.forEach(matchHistory, mhStats, (mh, st) -> {
@@ -87,7 +79,7 @@ public class Bot {
     private void stalk(Arguments arguments, MessageChannel c) {
         if (arguments.image) {
             var matches = findMatches(arguments);
-            StalkImageGenerator.stalk(c, new StalkDataset(arguments.summoner, matches));
+            new StalkImageGenerator(c, new StalkDataset(arguments.summoner, matches));
             return;
         }
         var resp = MyMessage.stalk(arguments);

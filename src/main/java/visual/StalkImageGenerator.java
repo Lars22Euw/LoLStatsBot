@@ -7,20 +7,15 @@ import util.U;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.awt.image.BufferedImage;
 import java.util.SortedSet;
 
 public class StalkImageGenerator extends ImageGenerator {
 
-    public static void stalk(MessageChannel channel, StalkDataset data) {
-        var img = new BufferedImage( BACKGROUND_WIDTH * BG_SCALE, BACKGROUND_HEIGHT * BG_SCALE, BufferedImage.TYPE_INT_ARGB);
-        var g = img.createGraphics();
-        setBackground(g);
-        g.setColor(GOLD);
+    public StalkImageGenerator(MessageChannel channel, StalkDataset data) {
+        super(data.summoner.getName());
         final var tableY = 0.26;
         final var tableHeight = 0.62;
 
-        makeTitle(g, data.summoner.getName());
 
         final var subHeadlineY = 0.2;
         final var firstColumnX = 0.02;
@@ -30,10 +25,10 @@ public class StalkImageGenerator extends ImageGenerator {
         U.enumerateForEach(
                 List.of("Winrate by Role", "Winrate by Champion", "Winrate by Gamemode"), datasets,
                 (i, headline, dataset) -> {
-            makeMediumText(g, headline, firstColumnX + i * (tableWidth + tableGap), subHeadlineY);
-            doubleBar(g, firstColumnX + i * (tableWidth + tableGap), tableY, tableWidth, tableHeight, (SortedSet<WinData<?>>) dataset);
+            makeMediumText(headline, firstColumnX + i * (tableWidth + tableGap), subHeadlineY);
+            doubleBar(firstColumnX + i * (tableWidth + tableGap), tableY, tableWidth, tableHeight, (SortedSet<WinData<?>>) dataset);
         });
 
-        makeMessage(channel, img, "farm.png");
+        makeMessage(channel, "farm.png");
     }
 }
