@@ -140,7 +140,14 @@ public class ImageGenerator {
         final var totalGames = (double) U.mapSum(winDataList, WinData::getGames);
         var portion = winDataList.stream().map(WinData::getGames).map(games -> games / totalGames).collect(Collectors.toList());
         var labels = winDataList.stream().map(WinData::getLabel).collect(Collectors.toList());
-        var images = winDataList.stream().map(WinData::getImages).filter(Objects::nonNull).map(s -> readImage(s, true)).collect(Collectors.toList());
+        var images = new ArrayList<BufferedImage>();
+        for (var datapoint: winDataList) {
+            var name = datapoint.getImageName();
+            if (name == null) continue;
+            var img = readImage(name, false);
+            if (img == null) continue;
+            images.add(img);
+        }
         if (images.isEmpty()) {
             doubleBar(x, y, width, height, portion, ratio, labels);
         } else {

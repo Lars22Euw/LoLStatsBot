@@ -41,7 +41,7 @@ public class WinData<T> extends Triple<T, Integer, Integer> {
         return key + " " + getWins() +  "W/" + (getGames() - getWins()) + "L (" + Math.round(getRatio() * 100) + "%)";
     }
 
-    public String getImages() {
+    public String getImageName() {
         if (first instanceof StalkRole) {
             return queueImage((StalkRole) first, "Diamond");
         } else {
@@ -49,8 +49,8 @@ public class WinData<T> extends Triple<T, Integer, Integer> {
         }
     }
 
-    private String queueImage(StalkRole role, String ranking) {
+    private static String queueImage(StalkRole role, String ranking) {
         final var roleName = role.toString();
-        return String.format("ranked-position-icons/Position_%s-%s.png", ranking, roleName.substring(0, 1) + roleName.substring(1).toLowerCase());
+        return String.format("ranked-position-icons/Position_%s-%s.png", ranking, roleName.charAt(0) + roleName.substring(1).toLowerCase());
     }
 }
