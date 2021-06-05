@@ -1,5 +1,6 @@
 package bot;
 
+import com.merakianalytics.orianna.Orianna;
 import com.merakianalytics.orianna.types.common.Queue;
 import com.merakianalytics.orianna.types.core.match.*;
 import com.merakianalytics.orianna.types.core.staticdata.Champion;
@@ -262,11 +263,13 @@ public class Bot {
     public Bot(String riotAPI, String discordAPI) {
         manager = new Manager(riotAPI);
         client = new DiscordClientBuilder(discordAPI).build();
+        ChampionRoleLookup.initialize(riotAPI);
     }
 
     public static void main(String[] args) {
         var s = new Bot(args[0], args[1]);
         s.getCommands(s.client);
+
 
         /*s.client.getGuilds().blockFirst().createEmoji(spec -> {
             File fi = new File("Aatrox.png");

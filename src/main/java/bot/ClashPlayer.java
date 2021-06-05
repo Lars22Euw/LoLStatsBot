@@ -6,6 +6,7 @@ import com.merakianalytics.orianna.types.core.championmastery.ChampionMastery;
 import com.merakianalytics.orianna.types.core.summoner.Summoner;
 import org.joda.time.DateTime;
 
+import java.awt.datatransfer.SystemFlavorMap;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -28,6 +29,9 @@ public class ClashPlayer extends Player {
      */
     //Map<Lane, Map<Champion, Double>> recentScores;
     List<ClashBan> recentScores;
+    Map<StalkRole, Double> roleDistribution;
+    Map<StalkRole, Double> roleRelativeDistribution;
+
     private final DateTime now;
 
     public ClashPlayer(Summoner sum, Manager manager) {
@@ -91,6 +95,12 @@ public class ClashPlayer extends Player {
         }
 
         recentScores = ClashBan.prepareClashBanList();
+        roleDistribution = new HashMap<>();
+        roleRelativeDistribution = new HashMap<>();
+        for (var sr : StalkRole.values()) {
+            roleDistribution.put(sr, 0.0);
+            roleRelativeDistribution.put(sr, 0.0);
+        }
     }
 
     public void updateRecentScore(Game game, double factor) {
@@ -118,12 +128,53 @@ public class ClashPlayer extends Player {
         return x;
     }
 
-    public void normalizeRecent() {
+    public void normalize() {
         if (matches.isEmpty()) {
             throw new IllegalArgumentException(name);
         }
         recentScores.forEach(clashBan -> clashBan.score *= RECENTLY_SCALING / matches.size());
         recentScores.forEach(clashBan -> clashBan.reasons.add(
                 new Reason(makeReason2(clashBan.score), clashBan.score)));
+        for (var role : StalkRole.values()) {
+            roleDistribution.compute(role, (r, v) -> v / matches.size());
+        }
+    }
+
+    public void updateRoleDistribution(Game game, double factor) {
+        var participant = game.match.getParticipants().find(p -> p.getSummoner().equals(summoner));
+        if (participant == null) {
+            System.out.println("Error in retrieving participant");
+            return;
+        }
+        var role = StalkRole.findRole(game.match, participant.getSummoner());
+        roleDistribution.put(role, roleDistribution.get(role) + function(game) * factor);
+    }
+
+    public List<ClashBan> mergeIntoOrderedListByPlayer() {
+
+
+        var finalBans = ClashBan.prepareClashBanList();
+        for (var cb : recentScores) {
+            ClashBan.add(finalBans, cb);
+        }
+        for (var cb : masteryScores) {
+            ClashBan.add(finalBans, cb);
+        }
+        amplifyByRoleDistribution(finalBans);
+        finalBans.sort(ClashBan::compareTo);
+        return finalBans;
+    }
+
+    public void amplifyByRoleDistribution(List<ClashBan> finalBans) {
+        for (var clashBan : finalBans) {
+            var amp = 0.0;
+            var championRoles = ChampionRoleLookup.get(clashBan.champion);
+            for (var role : StalkRole.values()) {
+                if (role != StalkRole.NONE) {
+                    amp += roleDistribution.get(role) * roleRelativeDistribution.get(role) * championRoles.get(role);
+                }
+            }
+            clashBan.score *= amp;
+        }
     }
 }

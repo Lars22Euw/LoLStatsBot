@@ -13,7 +13,6 @@ public class StalkDataset {
 
 
     public Summoner summoner;
-
     // Need sorted Sorted List
     public SortedSet<WinData<Champion>> championsData = new TreeSet<>(
         Comparator.comparing(data -> - (data.getWins()*1.0 /data.getGames())));
@@ -38,7 +37,6 @@ public class StalkDataset {
             return new WinData<>(t, wins, games);
         };
     }
-
 
     public StalkDataset(Summoner summoner, List<Match> matches) {
         this.summoner = summoner;

@@ -47,13 +47,20 @@ public class ClashTeam {
                                 : pGame.match.getQueue().equals(Queue.RANKED_SOLO) || pGame.match.getQueue().equals(Queue.RANKED_FLEX) ? 1.4
                                 : 1;
                         p.updateRecentScore(pGame, factor);
+                        p.updateRoleDistribution(pGame, factor);
                     }
                 }
             }
         }
-
-        for (var p: players) {
-            p.normalizeRecent();
+        players.forEach(ClashPlayer::normalize);
+        for (var role : StalkRole.values()) {
+            var sum = 0.0;
+            for (var p : players) {
+                sum += p.roleDistribution.get(role);
+            }
+            for (var p : players) {
+                p.roleRelativeDistribution.put(role, p.roleDistribution.get(role) / sum);
+            }
         }
     }
 
@@ -71,17 +78,7 @@ public class ClashTeam {
         return finalBans;
     }
 
-    public List<ClashBan> mergeIntoOrderedListByPlayer(ClashPlayer p) {
-        var finalBans = ClashBan.prepareClashBanList();
-        for (var cb : p.recentScores) {
-            ClashBan.add(finalBans, cb);
-        }
-        for (var cb : p.masteryScores) {
-            ClashBan.add(finalBans, cb);
-        }
-        finalBans.sort(ClashBan::compareTo);
-        return finalBans;
-    }
+
 
     public String[] bansText() {
         var result = new String[15];
@@ -98,7 +95,7 @@ public class ClashTeam {
         somethingWithPremades();
         int i = 0;
         for (var cp : players) {
-            var bans = mergeIntoOrderedListByPlayer(cp);
+            var bans = cp.mergeIntoOrderedListByPlayer();
             for (var j = 0; j < ENTRIES_PER_PLAYER; j++) {
                 final var clashBan = bans.get(j);
                 double mastery = 0;
