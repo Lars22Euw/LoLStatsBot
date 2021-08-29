@@ -1,5 +1,13 @@
 package util;
 
+import bot.WinData;
+import util.counter.IntCounter;
+import util.counter.ListCounter;
+import util.create.Any;
+import util.create.AnyExample;
+import util.create.AnyTypeRef;
+
+import javax.swing.*;
 import java.io.PrintStream;
 import java.lang.reflect.Method;
 import java.util.*;
@@ -11,12 +19,33 @@ import java.util.stream.Stream;
 
 public class U {
     public static void main(String[] args) {
-        List<List<String>> list = List.of(List.of("a"), List.of("b"));
-        var flat = list
-                .stream()
-                .flatMap(Collection::stream)
-                .collect(Collectors.toList());
+        ListCounter<Integer, String> lc = new ListCounter<>();
+        U.log(lc.get(4));
+        lc.increment(4, "cake");
+        U.log(lc.get(4));
+        lc.increment(2, "ei");
+        lc.increment(2, "ei");
+        lc.increment(2, "fi");
+        U.log(lc.get(2));
+        U.log(lc.get(4));
 
+        IntCounter<String> c = new IntCounter<>();
+        U.log(c.get("4"));
+        c.increment("4");
+        c.increment("4", 2);
+        U.log(c.get("4"));
+        c.increment("2", 2);
+        c.decrement("2");
+        c.decrement("2", 2);
+        U.log(c.get("2"));
+        U.log(c.get("4"));
+        U.log(Any.of(AnyExample.class, String.class, Double.class));
+        U.log(Any.of(String.class));
+        U.log(Any.of(List.class, String.class));
+        U.log(Any.of(AnyTypeRef.of(LinkedList.class, String.class)));
+        U.log(Any.of(AnyTypeRef.of(HashMap.class, String.class, Double.class)));
+        U.log(Any.of(AnyTypeRef.of(AnyTypeRef.of(List.class), AnyTypeRef.of(Set.class, Integer.class))));
+        U.log(Any.of(WinData.class, String.class));
     }
 
     public static <T, R> List<R> map(List<T> input, Function<T, R> map) {
@@ -124,6 +153,14 @@ public class U {
         return false;
     }
 
+    public static boolean all(List<Boolean> input) {
+        return all(input, b -> b);
+    }
+
+    public static boolean any(List<Boolean> input) {
+        return any(input, b -> b);
+    }
+
     private static void _log(PrintStream out, Object... objects) {
         int callersLineNumber = Thread.currentThread().getStackTrace()[4].getLineNumber();
         String className = Thread.currentThread().getStackTrace()[4].getClassName();
@@ -146,6 +183,11 @@ public class U {
     public static <T> String join(List<T> input, String delimiter) {
         if (input == null || input.isEmpty()) return "";
         return mapReduceSkipNull(input, T::toString, (acc, s) -> acc + delimiter + s);
+    }
+
+    public static <T> String join(List<T> input, String delimiter, Function<T, String> extractor) {
+        if (input == null || input.isEmpty()) return "";
+        return mapReduceSkipNull(input, extractor, (acc, s) -> acc + delimiter + s);
     }
 
     public static <T, R> R mapSum(List<T> input, Function<T, R> map) {
@@ -308,6 +350,14 @@ public class U {
         }
     }
 
+    public static <T, R> void forEach(Collection<T> inputT, R[] inputR, BiConsumer<T, R> biConsumer) {
+        Iterator<R> rit = Arrays.stream(inputR).iterator();
+        Iterator<T> tit = inputT.iterator();
+        while (tit.hasNext() && rit.hasNext()) {
+            biConsumer.accept(tit.next(), rit.next());
+        }
+    }
+
     public static <T, R, S> void forEach(Collection<T> inputT, Collection<R> inputR, Collection<S> inputS, TriConsumer<T, R, S> triConsumer) {
         Iterator<R> rit = inputR.iterator();
         Iterator<T> tit = inputT.iterator();
@@ -322,5 +372,50 @@ public class U {
         pairs.forEach(p -> biConsumer.accept(p.first, p.second));
     }
 
+    public static <T, R> List<Integer> rangeLengths(Collection<T> input, R state, BiFunction<T, R, UPair<R, Boolean>> inRange) {
+        int count = 0;
+        var result = new ArrayList<Integer>();
+        for (var t : input) {
+            var resp = inRange.apply(t, state);
+            state = resp.first;
+            if (resp.second) {
+                count++;
+            } else {
+                result.add(count);
+                count = 0;
+            }
+        }
+        result.add(count);
+        return result;
+    }
 
+    public static <T, R> List<List<T>> ranges(Collection<T> input, R state, BiFunction<T, R, UPair<R, Boolean>> inRange) {
+        var current = new ArrayList<T>();
+        var result = new ArrayList<List<T>>();
+        result.add(current);
+        var first = true;
+        UPair<R, Boolean> resp;
+        for (var t : input) {
+            if (first && state == null) {
+                resp = UPair.of(t, true);
+            } else {
+                resp = inRange.apply(t, state);
+            }
+            state = resp.first;
+            if (!resp.second) {
+                current = new ArrayList<>();
+                result.add(current);
+            }
+            current.add(t);
+        }
+        return result;
+    }
+
+    public static <T> List<List<T>> ranges(Collection<T> input) {
+        return ranges(input, null, (t, lastT) -> UPair.of(t, Objects.equals(t, lastT)));
+    }
+
+    public static <T> List<List<T>> ranges(Collection<T> input, Comparator<? super T> comp) {
+        return ranges(input, null, (t, lastT) -> UPair.of(t, comp.compare(t, (T) lastT) > 0));
+    }
 }
