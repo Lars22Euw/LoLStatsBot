@@ -1,6 +1,5 @@
 package bot;
 
-import com.merakianalytics.orianna.Orianna;
 import com.merakianalytics.orianna.types.common.Queue;
 import com.merakianalytics.orianna.types.core.match.*;
 import com.merakianalytics.orianna.types.core.staticdata.Champion;
@@ -16,6 +15,9 @@ import org.joda.time.format.DateTimeFormat;
 import util.U;
 import visual.*;
 
+import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -263,7 +265,7 @@ public class Bot {
     public Bot(String riotAPI, String discordAPI) {
         manager = new Manager(riotAPI);
         client = new DiscordClientBuilder(discordAPI).build();
-        ChampionRoleLookup.initialize(riotAPI);
+        // ChampionRoleLookup.initialize(riotAPI);
     }
 
     public static void main(String[] args) {
@@ -287,6 +289,8 @@ public class Bot {
         var guild = s.client.getGuildById(Snowflake.of(591616808835088404L)).block();
         var name = guild.getOwner().block().getDisplayName();
         System.out.println(name);
+
+        NameLookup.initIds();
         s.client.login().block();
     }
 

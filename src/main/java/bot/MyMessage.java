@@ -26,26 +26,7 @@ class MyMessage {
     StringBuilder sb = new StringBuilder();
     static final int MONTHS_IN_THE_PAST = 3;
 
-    private static Map<String, String> names = new HashMap<>();
-    static {
-        try {
-            final var br = new BufferedReader(
-                    new FileReader("names-lookup.txt"));
-            while (br.ready()) {
-                String line = br.readLine();
-                //"Ben-SattenLink-LarsmonX"
-                // TODO: something with smurfs
-                var split = line.split("-");
-                names.put(split[0], split[1]);
-            }
-            br.close();
-        } catch (FileNotFoundException e) {
-            System.out.println("Loaded without names-lookup");
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
+
 
     private static Map<String, Champion> champs= new HashMap<>();
     static void setChamps() {
@@ -144,8 +125,9 @@ class MyMessage {
 
         for (var s: token.split(",")) {
             if (s.startsWith("\\")) s = s.substring(1);
-            else if (names.containsKey(s)) s = names.get(s);
-            var summoner = Summoner.named(s).get();
+            else if (NameLookup.ids.containsKey(s)) s = NameLookup.ids.get(s);
+
+            var summoner = Summoner.withAccountId(s).get();
             if (summoner == null || !summoner.exists()) {
                 var region = summoner.getRegion().toString();
                 throw new InputError(s + " not present in " + region + ".\n");

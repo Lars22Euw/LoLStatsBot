@@ -308,6 +308,12 @@ public class U {
         }
     }
 
+    public static <T, R> void forEach(Map<T, R> map, BiConsumer<T, R> biConsumer) {
+        for (var entry : map.entrySet()) {
+            biConsumer.accept(entry.getKey(), entry.getValue());
+        }
+    }
+
     public static <T, R, S> void forEach(Collection<T> inputT, Collection<R> inputR, Collection<S> inputS, TriConsumer<T, R, S> triConsumer) {
         Iterator<R> rit = inputR.iterator();
         Iterator<T> tit = inputT.iterator();
